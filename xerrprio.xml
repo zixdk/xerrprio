@@ -1,0 +1,210 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
+    <Script file="xerrprio.lua"/>
+
+    <Frame name="XerrPrioFrameTemplate" virtual="true" alpha="0.9">
+        <Size>
+            <AbsDimension x="280" y="24"/>
+        </Size>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture file="Interface\DialogFrame\UI-DialogBox-Background">
+                    <Size x="280" y="24"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="0" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="BORDER">
+                <Texture file="Interface\Addons\xerrprio\Melli" name="$parentDuration" alpha="0.6">
+                    <Size x="150" y="24"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="0" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+
+                <Texture name="$parentIcon">
+                    <Size x="24" y="24"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="-24" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+
+                <Texture file="Interface\CastingBar\UI-CastingBar-Spark" name="$parentSpark" alphaMode="ADD">
+                    <Size x="16" y="32"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="142" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+
+                <FontString name="$parentHaste" inherits="GameFontNormal" justifyH="LEFT" text="120%">
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="10" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="30" y="30"/>
+                    </Size>
+                </FontString>
+
+                <FontString name="$parentSP" inherits="GameFontNormal" justifyH="LEFT" text="105%">
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="50" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="30" y="30"/>
+                    </Size>
+                </FontString>
+
+                <FontString name="$parentToF" inherits="GameFontNormal" justifyH="LEFT" text="ToF">
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="100" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="30" y="30"/>
+                    </Size>
+                </FontString>
+
+                <FontString name="$parentName" inherits="GameFontNormal" justifyH="RIGHT" text="Spell Name">
+                    <Anchors>
+                        <Anchor point="RIGHT">
+                            <Offset>
+                                <AbsDimension x="-30" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="120" y="30"/>
+                    </Size>
+                </FontString>
+
+                <FontString name="$parentTimeLeft" inherits="GameFontNormal" justifyH="RIGHT" text="25">
+                    <Anchors>
+                        <Anchor point="RIGHT">
+                            <Offset>
+                                <AbsDimension x="-3" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="50" y="24"/>
+                    </Size>
+                </FontString>
+            </Layer>
+        </Layers>
+    </Frame>
+
+    <Frame name="XERR_PRIO_Dots" toplevel="true" parent="UIParent" movable="true"
+           enableMouse="true">
+        <Size>
+            <AbsDimension x="280" y="80"/>
+        </Size>
+        <Anchors>
+            <Anchor point="CENTER"/>
+        </Anchors>
+        <Frames>
+        </Frames>
+        <Scripts>
+            <OnLoad>
+                self:RegisterForDrag("LeftButton");
+                self:SetMovable(1);
+                self:SetUserPlaced(true);
+            </OnLoad>
+            <OnDragStart>
+                self:StartMoving();
+                self.isMoving = true;
+            </OnDragStart>
+            <OnDragStop>
+                self:StopMovingOrSizing();
+                self.isMoving = false;
+            </OnDragStop>
+        </Scripts>
+
+    </Frame>
+
+    <Frame name="XERR_PRIO_Prio" toplevel="true" parent="UIParent" movable="true"
+           enableMouse="true">
+        <Size>
+            <AbsDimension x="100" y="100"/>
+        </Size>
+        <Anchors>
+            <Anchor point="CENTER"/>
+        </Anchors>
+        <Layers>
+            <Layer level="OVERLAY">
+
+                <Texture name="$parentIcon">
+                    <Size x="70" y="70"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="5" y="-5"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentIcon2">
+                    <Size x="45" y="45"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT">
+                            <Offset>
+                                <AbsDimension x="17" y="-25"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Frames>
+        </Frames>
+        <Scripts>
+            <OnLoad>
+                self:RegisterForDrag("LeftButton");
+                self:SetMovable(1);
+                self:SetUserPlaced(true);
+            </OnLoad>
+            <OnUpdate>
+                XerrPrio_OnUpdate()
+            </OnUpdate>
+            <OnDragStart>
+                self:StartMoving();
+                self.isMoving = true;
+            </OnDragStart>
+            <OnDragStop>
+                self:StopMovingOrSizing();
+                self.isMoving = false;
+            </OnDragStop>
+        </Scripts>
+
+    </Frame>
+
+</Ui>

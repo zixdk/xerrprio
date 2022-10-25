@@ -1,0 +1,7 @@
+## Interface: 50400
+## Title: XerrPrio
+## Notes: Spriest prio spells
+## Author: Xerron
+## SavedVariablesPerCharacter: XerrPrioDB
+xerrprio.xml
+

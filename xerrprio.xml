@@ -192,9 +192,6 @@
                 self:SetMovable(1);
                 self:SetUserPlaced(true);
             </OnLoad>
-            <OnUpdate>
-                XerrPrio_OnUpdate()
-            </OnUpdate>
             <OnDragStart>
                 self:StartMoving();
                 self.isMoving = true;

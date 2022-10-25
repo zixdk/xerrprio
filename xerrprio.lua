@@ -5,6 +5,8 @@ local _, class = UnitClass('player')
 XerrDots = CreateFrame("Frame")
 XerrPrio = CreateFrame("Frame")
 
+XerrDots.paused = false
+
 XerrDots.spells = {
     swp = {
         frame = nil,
@@ -162,37 +164,30 @@ function XerrDots:SpellPowerRefreshText(diff)
 end
 
 XerrDots:Hide()
+XerrDots.start = GetTime()
 
 XerrDots:SetScript("OnShow", function()
     XERR_PRIO_Dots:Show()
-    self.startTime = GetTime()
+    XerrDots.start = GetTime()
 end)
 XerrDots:SetScript("OnHide", function()
     XERR_PRIO_Dots:Hide()
-    self.startTime = GetTime()
+    XerrDots.start = GetTime()
 end)
 
 XerrDots:SetScript("OnUpdate", function()
-    local plus = 0.01
+    local plus = 0.05
     local gt = GetTime() * 1000
-    local st = (self.startTime + plus) * 1000
+    local st = (XerrDots.start + plus) * 1000
     if gt >= st then
 
-        self.startTime = GetTime()
+        XerrDots.start = GetTime()
 
-        if XerrPrioDB.configMode then
+        if XerrDots.paused or not XerrPrioDB.dots then
             return
         end
 
         XERR_PRIO_Dots:Hide()
-
-        if not UnitExists('target') then
-            XERR_PRIO_Dots:Hide()
-            for _, spell in next, XerrDots.spells do
-                spell.frame:Hide()
-            end
-            return
-        end
 
         local oneDot = false
 
@@ -259,8 +254,42 @@ XerrDots:SetScript("OnUpdate", function()
     end
 end)
 
+
+
+XerrPrio:Hide()
+XerrPrio.start = GetTime()
+
+XerrPrio:SetScript("OnShow", function()
+    XERR_PRIO_Prio:Show()
+    XerrPrio.start = GetTime()
+end)
+XerrPrio:SetScript("OnHide", function()
+    XERR_PRIO_Prio:Hide()
+    XerrPrio.start = GetTime()
+end)
+
+XerrPrio:SetScript("OnUpdate", function()
+    local plus = 0.05
+    local gt = GetTime() * 1000
+    local st = (XerrPrio.start + plus) * 1000
+    if gt >= st then
+
+        XerrPrio.start = GetTime()
+
+        if XerrDots.paused or not XerrPrioDB.prio then
+            return
+        end
+        XerrPrio.nextSpell = XerrPrio:GetNextSpell()
+
+        XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
+        XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
+    end
+end)
+
+
 XerrDots:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 XerrDots:RegisterEvent('ADDON_LOADED')
+XerrDots:RegisterEvent('PLAYER_TARGET_CHANGED')
 XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
     if event then
         if event == 'ADDON_LOADED' and arg1 == 'xerrprio' then
@@ -294,16 +323,16 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
                     configMode = false
                 }
             else
-                if XerrPrioDB.bars then
+                if XerrPrioDB.dots then
                     XerrDots:Show()
                 else
                     XerrDots:Hide()
                 end
 
                 if XerrPrioDB.prio then
-                    XERR_PRIO_Prio:Show()
+                    XerrPrio:Show()
                 else
-                    XERR_PRIO_Prio:Hide()
+                    XerrPrio:Hide()
                 end
 
                 if XerrPrioDB.configMode then
@@ -361,32 +390,38 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
             end
 
         end
+        if event == 'PLAYER_TARGET_CHANGED' then
+            print(event)
+            XerrDots.paused = false
+            if not UnitExists('target') then
+                XerrDots.paused = true
+            else
+                if UnitReaction('player', 'target') >= 5 then
+                    XerrDots.paused = true
+                end
+            end
+
+            print('XerrDots.paused =')
+            print(XerrDots.paused)
+        end
     end
 end)
 
-function XerrPrio_OnUpdate()
-    if not XerrPrioDB.prio then
-        return
-    end
-    XerrPrio.nextSpell = XerrPrio:GetNextSpell()
-    XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
-    XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
-end
 
 function XerrPrio:GetNextSpell()
 
     local prio = {}
 
     -- shadowfiend
-    --if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
-    --    return self.spells.shadowfiend
-    --end
+    if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
+        tinsert(prio, self.spells.shadowfiend)
+    end
 
     -- refresh swp or vt
-    if XerrDots.spells.swp.haste_perc > 100 and XerrDots.spells.swp.sp_perc > 100 then
+    if XerrDots.spells.swp.haste_perc > 110 and XerrDots.spells.swp.sp_perc > 110 then
         tinsert(prio, self.spells.swp)
     end
-    if XerrDots.spells.vt.haste_perc > 100 and XerrDots.spells.vt.sp_perc > 100 then
+    if XerrDots.spells.vt.haste_perc > 110 and XerrDots.spells.vt.sp_perc > 110 then
         tinsert(prio, self.spells.vt)
     end
 
@@ -499,10 +534,10 @@ function SlashCmdList.XERRPRIO(arg)
 
             if XerrPrioDB.prio then
                 print('XerrPrio Prio Icons ON')
-                XERR_PRIO_Prio:Show()
+                XerrPrio:Show()
             else
                 print('XerrPrio Prio Icons OFF')
-                XERR_PRIO_Prio:Hide()
+                XerrPrio:Hide()
             end
             return
         end
@@ -547,6 +582,24 @@ function SlashCmdList.XERRPRIO(arg)
     end
 
     print('XerrPrio available options: prio, dots, config.')
+    print('Current values:')
+    if XerrPrioDB.dots then
+        print('Dots: on')
+    else
+        print('Dots: off')
+    end
+
+    if XerrPrioDB.prio then
+        print('Prio: on')
+    else
+        print('Prio: off')
+    end
+
+    if XerrPrioDB.config then
+        print('Config: on')
+    else
+        print('Config: off')
+    end
 
 
 end

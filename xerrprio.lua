@@ -391,7 +391,6 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
 
         end
         if event == 'PLAYER_TARGET_CHANGED' then
-            print(event)
             XerrDots.paused = false
             if not UnitExists('target') then
                 XerrDots.paused = true
@@ -400,9 +399,6 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
                     XerrDots.paused = true
                 end
             end
-
-            print('XerrDots.paused =')
-            print(XerrDots.paused)
         end
     end
 end)

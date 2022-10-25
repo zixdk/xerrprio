@@ -21,7 +21,7 @@
             </Layer>
             <Layer level="BORDER">
                 <Texture file="Interface\Addons\xerrprio\Melli" name="$parentDuration" alpha="0.6">
-                    <Size x="150" y="24"/>
+                    <Size x="260" y="24"/>
                     <Anchors>
                         <Anchor point="TOPLEFT">
                             <Offset>
@@ -49,7 +49,7 @@
                     <Anchors>
                         <Anchor point="LEFT">
                             <Offset>
-                                <AbsDimension x="142" y="0"/>
+                                <AbsDimension x="252" y="0"/>
                             </Offset>
                         </Anchor>
                     </Anchors>
@@ -85,7 +85,20 @@
                     <Anchors>
                         <Anchor point="LEFT">
                             <Offset>
-                                <AbsDimension x="100" y="0"/>
+                                <AbsDimension x="95" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                    <Size>
+                        <AbsDimension x="30" y="30"/>
+                    </Size>
+                </FontString>
+
+                <FontString name="$parentUVLS" inherits="GameFontNormal" justifyH="LEFT" text="UVLS">
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="125" y="0"/>
                             </Offset>
                         </Anchor>
                     </Anchors>

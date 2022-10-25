@@ -102,6 +102,16 @@ function XerrDots:PlayerHasTwistOfFate()
     return false
 end
 
+function XerrDots:PlayerHasUVLS()
+    for i = 1, 40 do
+        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
+        if id == 138963 then
+            return true
+        end
+    end
+    return false
+end
+
 function XerrDots:PercentRefresh(current, dot)
     local perc = math.floor((current / dot) * 100)
 
@@ -183,7 +193,7 @@ XerrDots:SetScript("OnUpdate", function()
 
         XerrDots.start = GetTime()
 
-        if XerrDots.paused or not XerrPrioDB.dots then
+        if XerrDots.paused or not XerrPrioDB.dots or XerrPrioDB.configMode then
             return
         end
 
@@ -198,7 +208,8 @@ XerrDots:SetScript("OnUpdate", function()
 
                 oneDot = true
 
-                local haste, sp, tof = UnitSpellHaste("player"), GetSpellBonusDamage(6), XerrDots:PlayerHasTwistOfFate()
+                local haste, sp = UnitSpellHaste("player"), GetSpellBonusDamage(6)
+                local tof, uvls = XerrDots:PlayerHasTwistOfFate(),XerrDots:PlayerHasUVLS()
                 local guid = UnitGUID('target')
 
                 if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
@@ -232,7 +243,28 @@ XerrDots:SetScript("OnUpdate", function()
                             _G[frame .. 'ToF']:SetTextColor(1, 0, 0)
                         end
                     else
-                        _G[frame .. 'ToF']:SetText('')
+                        if XerrDots.dotStats[guid][key].tof then
+                            _G[frame .. 'ToF']:SetText('ToF')
+                            _G[frame .. 'ToF']:SetTextColor(0, 1, 0)
+                        else
+                            _G[frame .. 'ToF']:SetText('')
+                        end
+                    end
+
+                    if uvls then
+                        _G[frame .. 'UVLS']:SetText('UVLS')
+                        if XerrDots.dotStats[guid][key].uvls then
+                            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
+                        else
+                            _G[frame .. 'UVLS']:SetTextColor(1, 0, 0)
+                        end
+                    else
+                        if XerrDots.dotStats[guid][key].uvls then
+                            _G[frame .. 'UVLS']:SetText('UVLS')
+                            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
+                        else
+                            _G[frame .. 'UVLS']:SetText('')
+                        end
                     end
 
                 end
@@ -276,7 +308,7 @@ XerrPrio:SetScript("OnUpdate", function()
 
         XerrPrio.start = GetTime()
 
-        if XerrDots.paused or not XerrPrioDB.prio then
+        if XerrDots.paused or not XerrPrioDB.prio or XerrPrioDB.configMode then
             return
         end
         XerrPrio.nextSpell = XerrPrio:GetNextSpell()
@@ -374,13 +406,15 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
                         XerrDots.dotStats[guid][key] = {
                             haste = 0,
                             sp = 0,
-                            tof = false
+                            tof = false,
+                            uvls = false,
                         }
                     end
 
                     XerrDots.dotStats[guid][key].haste = UnitSpellHaste("player");
                     XerrDots.dotStats[guid][key].sp = GetSpellBonusDamage(6);
                     XerrDots.dotStats[guid][key].tof = XerrDots:PlayerHasTwistOfFate();
+                    XerrDots.dotStats[guid][key].uvls = XerrDots:PlayerHasUVLS();
 
                 end
             end
@@ -413,12 +447,15 @@ function XerrPrio:GetNextSpell()
         tinsert(prio, self.spells.shadowfiend)
     end
 
-    -- refresh swp or vt
-    if XerrDots.spells.swp.haste_perc > 110 and XerrDots.spells.swp.sp_perc > 110 then
-        tinsert(prio, self.spells.swp)
-    end
-    if XerrDots.spells.vt.haste_perc > 110 and XerrDots.spells.vt.sp_perc > 110 then
-        tinsert(prio, self.spells.vt)
+    -- refresh swp or vt, only if mindblast is on cd and both sp/haste are better
+    if self:GetSpellCooldown(self.spells.mb.id) > 1.5 then
+        if XerrDots.spells.swp.haste_perc > 110 and XerrDots.spells.swp.sp_perc > 110 then
+            tinsert(prio, self.spells.swp)
+        end
+        if XerrDots.spells.vt.haste_perc > 110 and XerrDots.spells.vt.sp_perc > 110 then
+            tinsert(prio, self.spells.vt)
+        end
+        -- todo add refresh for uvls and tof
     end
 
     -- plague

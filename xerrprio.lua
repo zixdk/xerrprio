@@ -317,8 +317,16 @@ XerrPrio:SetScript("OnUpdate", function()
         end
         XerrPrio.nextSpell = XerrPrio:GetNextSpell()
 
-        XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
-        XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
+        if XerrPrio.nextSpell[1] then
+            XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
+        else
+            XERR_PRIO_PrioIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        end
+        if XerrPrio.nextSpell[2] then
+            XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
+        else
+            XERR_PRIO_PrioIcon2:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        end
     end
 end)
 

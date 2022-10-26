@@ -21,13 +21,13 @@ XerrDots.spells = {
         color = { r = 60 / 255, g = 52 / 255, b = 175 / 255
         }
     },
-    dp = {
-        frame = nil,
-        ord = 3,
-        name = '', id = 2944, haste_perc = 0, sp_perc = 0,
-        color = { r = 113 / 255, g = 32 / 255, b = 97 / 255
-        }
-    }
+    --dp = {
+    --    frame = nil,
+    --    ord = 3,
+    --    name = '', id = 2944, haste_perc = 0, sp_perc = 0,
+    --    color = { r = 113 / 255, g = 32 / 255, b = 97 / 255
+    --    }
+    --}
 }
 
 XerrPrio.spells = {
@@ -117,9 +117,6 @@ function XerrDots:PercentRefresh(current, dot)
 
     local color = self.cols.white
 
-    -- [0 - 80] [80-90] [90-100]
-    -- [0 - 80] [80-90] [90-100]
-
     if perc < 79 then
         color = self.cols.lo3
     elseif perc >= 80 and perc < 90 then
@@ -134,7 +131,14 @@ function XerrDots:PercentRefresh(current, dot)
         color = self.cols.hi3
     end
 
+    perc = perc - 100
+    if perc == 0 then
+        return color .. '===', perc
+    elseif perc > 0 then
+        return color .. '+' .. perc .. '%', perc
+    end
     return color .. perc .. '%', perc
+
 end
 
 function XerrDots:HasteRefreshText(diff)
@@ -193,11 +197,11 @@ XerrDots:SetScript("OnUpdate", function()
 
         XerrDots.start = GetTime()
 
+        XERR_PRIO_Dots:Hide()
+
         if XerrDots.paused or not XerrPrioDB.dots or XerrPrioDB.configMode then
             return
         end
-
-        XERR_PRIO_Dots:Hide()
 
         local oneDot = false
 
@@ -388,7 +392,7 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
                 end
             end
 
-
+            XERR_PRIO_Prio:Hide()
 
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
@@ -425,12 +429,18 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
 
         end
         if event == 'PLAYER_TARGET_CHANGED' then
-            XerrDots.paused = false
             if not UnitExists('target') then
                 XerrDots.paused = true
+                XERR_PRIO_Prio:Hide()
+                return
             else
                 if UnitReaction('player', 'target') >= 5 then
                     XerrDots.paused = true
+                    XERR_PRIO_Prio:Hide()
+                    return
+                else
+                    XerrDots.paused = false
+                    XERR_PRIO_Prio:Show()
                 end
             end
         end

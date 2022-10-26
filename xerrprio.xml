@@ -64,7 +64,7 @@
                         </Anchor>
                     </Anchors>
                     <Size>
-                        <AbsDimension x="30" y="30"/>
+                        <AbsDimension x="40" y="30"/>
                     </Size>
                 </FontString>
 
@@ -77,7 +77,7 @@
                         </Anchor>
                     </Anchors>
                     <Size>
-                        <AbsDimension x="30" y="30"/>
+                        <AbsDimension x="40" y="30"/>
                     </Size>
                 </FontString>
 

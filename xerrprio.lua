@@ -10,9 +10,11 @@ local _, class = UnitClass('player')
 --------------------
 
 XerrDots = CreateFrame("Frame")
-XerrPrio = CreateFrame("Frame")
-
 XerrDots.paused = true
+
+XerrPrio = CreateFrame("Frame")
+XerrPrio.spellBookSpells = {}
+XerrPrio.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
 
 XerrDots.spells = {
     swp = {
@@ -81,91 +83,19 @@ XerrDots.dotStats = {}
 --- Events
 --------------------
 
+-- todo check spec to be shadow
+
 XerrDots:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 XerrDots:RegisterEvent('ADDON_LOADED')
 XerrDots:RegisterEvent('PLAYER_ENTERING_WORLD')
 XerrDots:RegisterEvent('PLAYER_TARGET_CHANGED')
+XerrDots:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+XerrDots:RegisterEvent('PLAYER_TALENT_UPDATE')
 XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
     if event then
         if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' then
-            print("XerrDots OnLoad")
-
-            local spellBookSpells = {}
-
-            local i = 1
-            while true do
-                local spellName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
-                if not spellName then
-                    do break end
-                end
-                spellBookSpells[spellName] = i
-                i = i + 1
-            end
-
-            for key, spell in next, XerrDots.spells do
-                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
-
-                local frameName = 'XERRPRIODots_' .. key
-
-                spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
-
-                _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
-
-                _G[frameName .. 'Icon']:SetTexture(spell.icon)
-                _G[frameName .. 'Duration']:SetVertexColor(spell.color.r, spell.color.g, spell.color.b)
-                _G[frameName .. 'Name']:SetText(spell.name)
-                _G[frameName .. 'Name']:SetTextColor(1, 1, 1)
-
-            end
-
-            for key, spell in next, XerrPrio.spells do
-                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
-                spell.spellBookID = spellBookSpells[spell.name]
-            end
-            XerrPrio.spells.swd.lastCastTime = GetTime()
-
-            if not XerrPrioDB then
-                XerrPrioDB = {
-                    bars = false,
-                    prio = false,
-                    configMode = false
-                }
-            else
-                if XerrPrioDB.dots then
-                    XerrDots:Show()
-                else
-                    XerrDots:Hide()
-                end
-
-                if XerrPrioDB.prio then
-                    XerrPrio:Show()
-                else
-                    XerrPrio:Hide()
-                end
-
-                if XerrPrioDB.configMode then
-
-                    for _, spell in next, XerrDots.spells do
-                        spell.frame:Show()
-                    end
-
-                    XerrPrioDB.configMode = true
-                    XERR_PRIO_Dots:Show()
-                    print('XerrPrio Dots Config Mode On')
-                else
-
-                    for _, spell in next, XerrDots.spells do
-                        spell.frame:Hide()
-                    end
-
-                    XerrPrioDB.configMode = false
-                    XERR_PRIO_Dots:Hide()
-                    print('XerrPrio Dots Config Mode Off')
-                end
-            end
-
-            XERR_PRIO_Prio:Hide()
-
+            XerrPrio:Init()
+            return
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
 
@@ -216,8 +146,103 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
                 end
             end
         end
+        if event == 'PLAYER_SPECIALIZATION_CHANGED' then
+            XerrPrio:PopulateSpellBookID()
+            return
+        end
     end
 end)
+
+--------------------
+---  Init
+--------------------
+
+function XerrPrio:Init()
+    print("XerrDots OnLoad")
+
+    self:PopulateSpellBookID()
+
+    for key, spell in next, XerrDots.spells do
+        spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+
+        local frameName = 'XERRPRIODots_' .. key
+
+        spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
+
+        _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
+
+        _G[frameName .. 'Icon']:SetTexture(spell.icon)
+        _G[frameName .. 'Duration']:SetVertexColor(spell.color.r, spell.color.g, spell.color.b)
+        _G[frameName .. 'Name']:SetText(spell.name)
+        _G[frameName .. 'Name']:SetTextColor(1, 1, 1)
+
+    end
+
+    for _, spell in next, XerrPrio.spells do
+        spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+    end
+    XerrPrio.spells.swd.lastCastTime = GetTime()
+
+    if not XerrPrioDB then
+        XerrPrioDB = {
+            bars = false,
+            prio = false,
+            configMode = false
+        }
+    else
+        if XerrPrioDB.dots then
+            XerrDots:Show()
+        else
+            XerrDots:Hide()
+        end
+
+        if XerrPrioDB.prio then
+            XerrPrio:Show()
+        else
+            XerrPrio:Hide()
+        end
+
+        if XerrPrioDB.configMode then
+
+            for _, spell in next, XerrDots.spells do
+                spell.frame:Show()
+            end
+
+            XerrPrioDB.configMode = true
+            XERR_PRIO_Dots:Show()
+            print('XerrPrio Dots Config Mode On')
+        else
+
+            for _, spell in next, XerrDots.spells do
+                spell.frame:Hide()
+            end
+
+            XerrPrioDB.configMode = false
+            XERR_PRIO_Dots:Hide()
+            print('XerrPrio Dots Config Mode Off')
+        end
+    end
+
+    XERR_PRIO_Prio:Hide()
+end
+
+function XerrPrio:PopulateSpellBookID()
+    self.spellBookSpells = {}
+
+    local i = 1
+    while true do
+        local spellName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
+        if not spellName then
+            do break end
+        end
+        self.spellBookSpells[spellName] = i
+        i = i + 1
+    end
+
+    for _, spell in next, self.spells do
+        spell.spellBookID = self.spellBookSpells[spell.name] or false
+    end
+end
 
 --------------------
 ---  Timers
@@ -508,6 +533,19 @@ function XerrPrio:GetWAIconColor(spell)
     local isNext = self.nextSpell[1].id == spell.id
     local isNext2 = self.nextSpell[2].id == spell.id
 
+    if spell.id == self.spells.halo.id then
+        inRange = false
+        local hp = HaloPro_MainFrame
+        if hp.texture:GetTexture() then
+            local hpt = hp.texture:GetTexture()
+            if hpt == self.hp_path .. 'left' then
+            elseif hpt == self.hp_path .. 'center' then
+                inRange = true
+            end
+        end
+
+    end
+
     if inRange then
         if isNext then
             return 1, 1, 1, 1, isNext, isNext2, inRange
@@ -531,13 +569,8 @@ function XerrPrio:GetNextSpell()
     --if true then return prio end
 
     -- halo
-    if self:GetSpellCooldown(self.spells.halo.id) == 0 then
+    if self.spells.halo.spellBookID and self:GetSpellCooldown(self.spells.halo.id) == 0 then
         tinsert(prio, self.spells.halo)
-    end
-
-    -- shadowfiend
-    if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
-        tinsert(prio, self.spells.shadowfiend)
     end
 
     -- refresh swp or vt, only if mindblast is on cd and both sp/haste are better
@@ -598,6 +631,17 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
+    -- shadowfiend
+    if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
+        tinsert(prio, self.spells.shadowfiend)
+    end
+
+
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
+
     -- mindflay insanity
     if XerrDots:GetDebuffInfo(self.spells.dp.id) >= 0.1 then
         tinsert(prio, self.spells.mf)
@@ -608,7 +652,7 @@ function XerrPrio:GetNextSpell()
     end
 
     -- swp
-    if XerrDots:GetDebuffInfo(self.spells.swp.id) == 0 then
+    if XerrDots:GetDebuffInfo(self.spells.swp.id) < 0.5 then
         tinsert(prio, self.spells.swp)
     end
 
@@ -636,6 +680,12 @@ function XerrPrio:GetNextSpell()
     if self:GetSpellCooldown(self.spells.mb.id) <= 1 then
         if prio[2] and prio[2].id ~= self.spells.dp.id then
             prio[2] = self.spells.mb
+        end
+    end
+
+    if tablesize(prio) == 1 then
+        if self:GetSpellCooldown(self.spells.mb.id) < self:GetSpellCooldown(self.spells.halo.id) then
+            tinsert(prio, self.spells.mb)
         end
     end
 

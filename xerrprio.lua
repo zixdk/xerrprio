@@ -1,11 +1,18 @@
 local _G = _G
-local tinsert = tinsert
+local tinsert, tablesize = tinsert, table.getn
 local _, class = UnitClass('player')
+
+-- known issues
+-- if target is friendly and turns hostile, the pause doesnt go to false
+
+--------------------
+--- Inits
+--------------------
 
 XerrDots = CreateFrame("Frame")
 XerrPrio = CreateFrame("Frame")
 
-XerrDots.paused = false
+XerrDots.paused = true
 
 XerrDots.spells = {
     swp = {
@@ -31,14 +38,14 @@ XerrDots.spells = {
 }
 
 XerrPrio.spells = {
-    swp = { name = '', id = 589, icon = '' },
-    vt = { name = '', id = 34914, icon = '' },
-    dp = { name = '', id = 2944, icon = '' },
-    mf = { name = '', id = 15407, icon = '' },
-    mb = { name = '', id = 8092, icon = '' },
-    halo = { name = '', id = 120644, icon = '' },
-    shadowfiend = { name = '', id = 34433, icon = '' },
-    swd = { name = '', id = 32379, icon = '', lastCastTime = '' },
+    swp = { name = '', id = 589, icon = '', spellBookID = 0 },
+    vt = { name = '', id = 34914, icon = '', spellBookID = 0 },
+    dp = { name = '', id = 2944, icon = '', spellBookID = 0 },
+    mf = { name = '', id = 15407, icon = '', spellBookID = 0 },
+    mb = { name = '', id = 8092, icon = '', spellBookID = 0 },
+    halo = { name = '', id = 120644, icon = '', spellBookID = 0 },
+    shadowfiend = { name = '', id = 34433, icon = '', spellBookID = 0 },
+    swd = { name = '', id = 32379, icon = '', lastCastTime = '', spellBookID = 0 },
 }
 
 XerrPrio.nextSpell = {
@@ -70,112 +77,155 @@ XerrDots.texts = {
 
 XerrDots.dotStats = {}
 
-function XerrDots:GetSpellInfo(id)
-    local name, _, icon = GetSpellInfo(id)
-    return name, icon
-end
+--------------------
+--- Events
+--------------------
 
-function XerrDots:GetDebuffInfo(id)
-    if not UnitExists('target') then
-        return 0, 0
-    end
-    for i = 1, 40 do
-        local _, _, _, _, _, duration, expirationTime, unitCaster, _, _, spellId = UnitDebuff('target', i)
-        if unitCaster == "player" then
-            if spellId == id then
-                local tl = expirationTime - GetTime()
-                local perc = tl / duration
-                return expirationTime - GetTime(), perc
+XerrDots:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+XerrDots:RegisterEvent('ADDON_LOADED')
+XerrDots:RegisterEvent('PLAYER_ENTERING_WORLD')
+XerrDots:RegisterEvent('PLAYER_TARGET_CHANGED')
+XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
+    if event then
+        if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' then
+            print("XerrDots OnLoad")
+
+            local spellBookSpells = {}
+
+            local i = 1
+            while true do
+                local spellName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
+                if not spellName then
+                    do break end
+                end
+                spellBookSpells[spellName] = i
+                i = i + 1
+            end
+
+            for key, spell in next, XerrDots.spells do
+                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+
+                local frameName = 'XERRPRIODots_' .. key
+
+                spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
+
+                _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
+
+                _G[frameName .. 'Icon']:SetTexture(spell.icon)
+                _G[frameName .. 'Duration']:SetVertexColor(spell.color.r, spell.color.g, spell.color.b)
+                _G[frameName .. 'Name']:SetText(spell.name)
+                _G[frameName .. 'Name']:SetTextColor(1, 1, 1)
+
+            end
+
+            for key, spell in next, XerrPrio.spells do
+                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+                spell.spellBookID = spellBookSpells[spell.name]
+            end
+            XerrPrio.spells.swd.lastCastTime = GetTime()
+
+            if not XerrPrioDB then
+                XerrPrioDB = {
+                    bars = false,
+                    prio = false,
+                    configMode = false
+                }
+            else
+                if XerrPrioDB.dots then
+                    XerrDots:Show()
+                else
+                    XerrDots:Hide()
+                end
+
+                if XerrPrioDB.prio then
+                    XerrPrio:Show()
+                else
+                    XerrPrio:Hide()
+                end
+
+                if XerrPrioDB.configMode then
+
+                    for _, spell in next, XerrDots.spells do
+                        spell.frame:Show()
+                    end
+
+                    XerrPrioDB.configMode = true
+                    XERR_PRIO_Dots:Show()
+                    print('XerrPrio Dots Config Mode On')
+                else
+
+                    for _, spell in next, XerrDots.spells do
+                        spell.frame:Hide()
+                    end
+
+                    XerrPrioDB.configMode = false
+                    XERR_PRIO_Dots:Hide()
+                    print('XerrPrio Dots Config Mode Off')
+                end
+            end
+
+            XERR_PRIO_Prio:Hide()
+
+        end
+        if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
+
+            local guid = UnitGUID('target')
+
+            for key, spell in next, XerrDots.spells do
+                if arg5 == spell.id then
+
+                    if not XerrDots.dotStats[guid] then
+                        XerrDots.dotStats[guid] = {}
+                    end
+
+                    if not XerrDots.dotStats[guid][key] then
+                        XerrDots.dotStats[guid][key] = {
+                            haste = 0,
+                            sp = 0,
+                            tof = false,
+                            uvls = false,
+                        }
+                    end
+
+                    XerrDots.dotStats[guid][key].haste = UnitSpellHaste("player");
+                    XerrDots.dotStats[guid][key].sp = GetSpellBonusDamage(6);
+                    XerrDots.dotStats[guid][key].tof = XerrDots:PlayerHasTwistOfFate();
+                    XerrDots.dotStats[guid][key].uvls = XerrDots:PlayerHasUVLS();
+
+                end
+            end
+
+            if arg5 == XerrPrio.spells.swd.id then
+                XerrPrio.spells.swd.lastCastTime = GetTime()
+            end
+
+        end
+        if event == 'PLAYER_TARGET_CHANGED' then
+            if not UnitExists('target') then
+                XerrDots.paused = true
+                XERR_PRIO_Prio:Hide()
+                return
+            else
+                if UnitReaction('player', 'target') >= 5 then
+                    XerrDots.paused = true
+                    XERR_PRIO_Prio:Hide()
+                    return
+                else
+                    XerrDots.paused = false
+                    XERR_PRIO_Prio:Show()
+                end
             end
         end
     end
-    return 0, 0
-end
+end)
 
-function XerrDots:PlayerHasTwistOfFate()
-    for i = 1, 40 do
-        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
-        if id == 123254 then
-            return true
-        end
-    end
-    return false
-end
+--------------------
+---  Timers
+--------------------
 
-function XerrDots:PlayerHasUVLS()
-    for i = 1, 40 do
-        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
-        if id == 138963 then
-            return true
-        end
-    end
-    return false
-end
-
-function XerrDots:PercentRefresh(current, dot)
-    local perc = math.floor((current / dot) * 100)
-
-    local color = self.cols.white
-
-    if perc < 79 then
-        color = self.cols.lo3
-    elseif perc >= 80 and perc < 90 then
-        color = self.cols.lo2
-    elseif perc >= 90 and perc < 99 then
-        color = self.cols.lo1
-    elseif perc >= 101 and perc < 110 then
-        color = self.cols.hi1
-    elseif perc >= 110 and perc < 120 then
-        color = self.cols.hi2
-    elseif perc >= 120 then
-        color = self.cols.hi3
-    end
-
-    perc = perc - 100
-    if perc == 0 then
-        return color .. '===', perc
-    elseif perc > 0 then
-        return color .. '+' .. perc .. '%', perc
-    end
-    return color .. perc .. '%', perc
-
-end
-
-function XerrDots:HasteRefreshText(diff)
-    if diff > 9 and diff < 20 then
-        return self.texts.haste_hi1
-    elseif diff >= 20 and diff < 30 then
-        return self.texts.haste_hi2
-    elseif diff >= 30 then
-        return self.texts.haste_hi3
-    elseif diff < -9 and diff > -20 then
-        return self.texts.haste_lo1
-    elseif diff < -20 and diff > -30 then
-        return self.texts.haste_lo2
-    elseif diff <= -30 then
-        return self.texts.haste_lo3
-    else
-        return '==='
-    end
-end
-
-function XerrDots:SpellPowerRefreshText(diff)
-    if diff > 1550 and diff < 3700 then
-        return self.cols.hi1 .. '+' .. math.floor(diff / 1000) .. 'k|r'
-    elseif diff >= 3700 and diff < 7000 then
-        return self.cols.hi2 .. '+' .. math.floor(diff / 1000) .. 'k|r'
-    elseif diff >= 7000 then
-        return self.cols.hi3 .. '+' .. math.floor(diff / 1000) .. 'k|r'
-    elseif diff < -1550 and diff > -3700 then
-        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
-    elseif diff < -3700 and diff > -7000 then
-        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
-    elseif diff <= -7000 then
-        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
-    else
-        return '==='
-    end
-end
+--------------------
+--- Dots
+--------------------
 
 XerrDots:Hide()
 XerrDots.start = GetTime()
@@ -290,7 +340,9 @@ XerrDots:SetScript("OnUpdate", function()
     end
 end)
 
-
+--------------------
+--- Prio
+--------------------
 
 XerrPrio:Hide()
 XerrPrio.start = GetTime()
@@ -313,6 +365,10 @@ XerrPrio:SetScript("OnUpdate", function()
         XerrPrio.start = GetTime()
 
         if XerrDots.paused or not XerrPrioDB.prio or XerrPrioDB.configMode then
+            XerrPrio.nextSpell = {
+                [1] = { id = 0, name = ''},
+                [2] = { id = 0, name = ''}
+            }
             return
         end
         XerrPrio.nextSpell = XerrPrio:GetNextSpell()
@@ -330,135 +386,154 @@ XerrPrio:SetScript("OnUpdate", function()
     end
 end)
 
+--------------------
+--- Helpers
+--------------------
 
-XerrDots:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-XerrDots:RegisterEvent('ADDON_LOADED')
-XerrDots:RegisterEvent('PLAYER_TARGET_CHANGED')
-XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
-    if event then
-        if event == 'ADDON_LOADED' and arg1 == 'xerrprio' then
-            print("XerrDots OnLoad")
+function XerrDots:GetSpellInfo(id)
+    local name, _, icon = GetSpellInfo(id)
+    return name, icon
+end
 
-            for key, spell in next, XerrDots.spells do
-                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
-
-                local frameName = 'XERRPRIODots_' .. key
-
-                spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
-
-                _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
-
-                _G[frameName .. 'Icon']:SetTexture(spell.icon)
-                _G[frameName .. 'Duration']:SetVertexColor(spell.color.r, spell.color.g, spell.color.b)
-                _G[frameName .. 'Name']:SetText(spell.name)
-                _G[frameName .. 'Name']:SetTextColor(1, 1, 1)
-
-            end
-
-            for key, spell in next, XerrPrio.spells do
-                spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
-            end
-            XerrPrio.spells.swd.lastCastTime = GetTime()
-
-            if not XerrPrioDB then
-                XerrPrioDB = {
-                    bars = false,
-                    prio = false,
-                    configMode = false
-                }
-            else
-                if XerrPrioDB.dots then
-                    XerrDots:Show()
-                else
-                    XerrDots:Hide()
-                end
-
-                if XerrPrioDB.prio then
-                    XerrPrio:Show()
-                else
-                    XerrPrio:Hide()
-                end
-
-                if XerrPrioDB.configMode then
-
-                    for _, spell in next, XerrDots.spells do
-                        spell.frame:Show()
-                    end
-
-                    XerrPrioDB.configMode = true
-                    XERR_PRIO_Dots:Show()
-                    print('XerrPrio Dots Config Mode On')
-                else
-
-                    for _, spell in next, XerrDots.spells do
-                        spell.frame:Hide()
-                    end
-
-                    XerrPrioDB.configMode = false
-                    XERR_PRIO_Dots:Hide()
-                    print('XerrPrio Dots Config Mode Off')
-                end
-            end
-
-            XERR_PRIO_Prio:Hide()
-
-        end
-        if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
-
-            local guid = UnitGUID('target')
-
-            for key, spell in next, XerrDots.spells do
-                if arg5 == spell.id then
-
-                    if not XerrDots.dotStats[guid] then
-                        XerrDots.dotStats[guid] = {}
-                    end
-
-                    if not XerrDots.dotStats[guid][key] then
-                        XerrDots.dotStats[guid][key] = {
-                            haste = 0,
-                            sp = 0,
-                            tof = false,
-                            uvls = false,
-                        }
-                    end
-
-                    XerrDots.dotStats[guid][key].haste = UnitSpellHaste("player");
-                    XerrDots.dotStats[guid][key].sp = GetSpellBonusDamage(6);
-                    XerrDots.dotStats[guid][key].tof = XerrDots:PlayerHasTwistOfFate();
-                    XerrDots.dotStats[guid][key].uvls = XerrDots:PlayerHasUVLS();
-
-                end
-            end
-
-            if arg5 == XerrPrio.spells.swd.id then
-                XerrPrio.spells.swd.lastCastTime = GetTime()
-            end
-
-        end
-        if event == 'PLAYER_TARGET_CHANGED' then
-            if not UnitExists('target') then
-                XerrDots.paused = true
-                XERR_PRIO_Prio:Hide()
-                return
-            else
-                if UnitReaction('player', 'target') >= 5 then
-                    XerrDots.paused = true
-                    XERR_PRIO_Prio:Hide()
-                    return
-                else
-                    XerrDots.paused = false
-                    XERR_PRIO_Prio:Show()
-                end
+function XerrDots:GetDebuffInfo(id)
+    if not UnitExists('target') then
+        return 0, 0
+    end
+    for i = 1, 40 do
+        local _, _, _, _, _, duration, expirationTime, unitCaster, _, _, spellId = UnitDebuff('target', i)
+        if unitCaster == "player" then
+            if spellId == id then
+                local tl = expirationTime - GetTime()
+                local perc = tl / duration
+                return expirationTime - GetTime(), perc
             end
         end
     end
-end)
+    return 0, 0
+end
 
+function XerrDots:PlayerHasTwistOfFate()
+    for i = 1, 40 do
+        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
+        if id == 123254 then
+            return true
+        end
+    end
+    return false
+end
+
+function XerrDots:PlayerHasUVLS()
+    for i = 1, 40 do
+        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
+        if id == 138963 then
+            return true
+        end
+    end
+    return false
+end
+
+function XerrDots:PercentRefresh(current, dot)
+    local perc = math.floor((current / dot) * 100)
+
+    local color = self.cols.white
+
+    if perc < 79 then
+        color = self.cols.lo3
+    elseif perc >= 80 and perc < 90 then
+        color = self.cols.lo2
+    elseif perc >= 90 and perc < 99 then
+        color = self.cols.lo1
+    elseif perc >= 101 and perc < 110 then
+        color = self.cols.hi1
+    elseif perc >= 110 and perc < 120 then
+        color = self.cols.hi2
+    elseif perc >= 120 then
+        color = self.cols.hi3
+    end
+
+    perc = perc - 100
+    if perc == 0 then
+        return color .. '===', perc
+    elseif perc > 0 then
+        return color .. '+' .. perc .. '%', perc
+    end
+    return color .. perc .. '%', perc
+
+end
+
+function XerrDots:HasteRefreshText(diff)
+    if diff > 9 and diff < 20 then
+        return self.texts.haste_hi1
+    elseif diff >= 20 and diff < 30 then
+        return self.texts.haste_hi2
+    elseif diff >= 30 then
+        return self.texts.haste_hi3
+    elseif diff < -9 and diff > -20 then
+        return self.texts.haste_lo1
+    elseif diff < -20 and diff > -30 then
+        return self.texts.haste_lo2
+    elseif diff <= -30 then
+        return self.texts.haste_lo3
+    else
+        return '==='
+    end
+end
+
+function XerrDots:SpellPowerRefreshText(diff)
+    if diff > 1550 and diff < 3700 then
+        return self.cols.hi1 .. '+' .. math.floor(diff / 1000) .. 'k|r'
+    elseif diff >= 3700 and diff < 7000 then
+        return self.cols.hi2 .. '+' .. math.floor(diff / 1000) .. 'k|r'
+    elseif diff >= 7000 then
+        return self.cols.hi3 .. '+' .. math.floor(diff / 1000) .. 'k|r'
+    elseif diff < -1550 and diff > -3700 then
+        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
+    elseif diff < -3700 and diff > -7000 then
+        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
+    elseif diff <= -7000 then
+        return self.cols.lo2 .. math.floor(diff / 1000) .. 'k|r'
+    else
+        return '==='
+    end
+end
+
+
+function XerrPrio:GetWAIconColor(spell)
+
+    if not UnitExists('target') or XerrDots.paused then
+        return 1, 1, 1, 1
+    end
+
+    local inRange = IsSpellInRange(spell.spellBookID, "target") == 1
+    local isNext = self.nextSpell[1].id == spell.id
+    local isNext2 = self.nextSpell[2].id == spell.id
+
+    if inRange then
+        if isNext then
+            return 1, 1, 1, 1, isNext, isNext2, inRange
+        elseif isNext2 then
+            return 1, 1, 1, 1, isNext, isNext2, inRange
+        else
+            return 0.7, 0.7, 0.7, 1, isNext, isNext2, inRange
+        end
+    end
+
+    -- out of range
+    return 1, 0.2, 0.2, 1, isNext, isNext2, inRange
+end
 
 function XerrPrio:GetNextSpell()
 
     local prio = {}
+
+    --tinsert(prio, self.spells.mf)
+    --tinsert(prio, self.spells.dp)
+    --if true then return prio end
+
+    -- halo
+    if self:GetSpellCooldown(self.spells.halo.id) == 0 then
+        tinsert(prio, self.spells.halo)
+    end
 
     -- shadowfiend
     if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
@@ -476,31 +551,39 @@ function XerrPrio:GetNextSpell()
         -- todo add refresh for uvls and tof
     end
 
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
     -- plague
     if self:GetShadowOrbs() == 3 then
         tinsert(prio, self.spells.dp)
-        --return self.spells.dp
     end
+
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
     -- shadow word: death
     if self:ExecutePhase() and self:GetSpellCooldown(self.spells.swd.id) == 0 then
         if XerrDots:GetDebuffInfo(self.spells.dp.id) >= 0.2 then
             if GetTime() - self.spells.swd.lastCastTime >= 8 then
                 tinsert(prio, self.spells.swd)
-                --return self.spells.swd
             elseif self:GetSpellCooldown(self.spells.mb.id) == 0 then
                 tinsert(prio, self.spells.mb)
                 if self:GetShadowOrbs() == 2 then
                     tinsert(prio, self.spells.dp)
                 end
-                --return self.spells.mb
             else
                 tinsert(prio, self.spells.mf)
-                --return self.spells.mf
             end
         else
             tinsert(prio, self.spells.swd)
-            --return self.spells.swd
         end
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- mind blast
@@ -509,36 +592,52 @@ function XerrPrio:GetNextSpell()
         if self:GetShadowOrbs() == 2 then
             tinsert(prio, self.spells.dp)
         end
-        --return self.spells.mb
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- mindflay insanity
     if XerrDots:GetDebuffInfo(self.spells.dp.id) >= 0.1 then
         tinsert(prio, self.spells.mf)
-        --return self.spells.mf
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- swp
     if XerrDots:GetDebuffInfo(self.spells.swp.id) == 0 then
         tinsert(prio, self.spells.swp)
-        --return self.spells.swp
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- vt
     if XerrDots:GetDebuffInfo(self.spells.vt.id) <= 1 then
         tinsert(prio, self.spells.vt)
-        --return self.spells.vt
     end
 
-    -- halo
-    if self:GetSpellCooldown(self.spells.halo.id) == 0 then
-        tinsert(prio, self.spells.halo)
-        --return self.spells.halo
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- mind flay if nothing else is available
     tinsert(prio, self.spells.mf)
-    --return self.spells.mf
+
+    -- mind blast 2nd if cd <= 0.5s
+    if self:GetSpellCooldown(self.spells.mb.id) <= 1 then
+        if prio[2] and prio[2].id ~= self.spells.dp.id then
+            prio[2] = self.spells.mb
+        end
+    end
 
     return prio
 end
@@ -574,6 +673,10 @@ function XerrPrio:ExecutePhase()
     end
     return (UnitHealth('target') * 100) / UnitHealthMax('target') <= 20
 end
+
+--------------------
+--- Slashcommands
+--------------------
 
 SLASH_XERRPRIO1, SLASH_XERRPRIO2 = "/xerrprio", "/xprio";
 function SlashCmdList.XERRPRIO(arg)

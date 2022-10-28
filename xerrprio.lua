@@ -587,6 +587,15 @@ function XerrPrio:GetNextSpell()
 
     local prio = {}
 
+    local guid = UnitGUID('target')
+    -- refresh dots if uvls procd
+    if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.uvls and XerrUtils:PlayerHasUVLS() then
+        tinsert(prio, self.spells.swp)
+    end
+    if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.uvls and XerrUtils:PlayerHasUVLS() then
+        tinsert(prio, self.spells.vt)
+    end
+
     -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
     if XerrUtils:GetSpellCooldown(self.spells.mb.id) > 1.5 and XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
         -- swp if haste is at least 20% better
@@ -607,19 +616,17 @@ function XerrPrio:GetNextSpell()
             tinsert(prio, self.spells.vt)
         end
 
-        -- swp
+        -- swp if both haste and sp are 10% better
         if XerrDots.spells.swp.haste_perc > 10 and XerrDots.spells.swp.sp_perc > 10 then
             tinsert(prio, self.spells.swp)
         end
-        -- vt
+        -- vt if both haste and sp are 10% better
         if XerrDots.spells.vt.haste_perc > 10 and XerrDots.spells.vt.sp_perc > 10 then
             tinsert(prio, self.spells.vt)
         end
-        -- todo refresh for uvls
 
         -- refresh if i have tof and dots dont
-        local guid = UnitGUID('target')
-
+        -- todo maybe check for sp/haste too here
         if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.tof and XerrUtils:PlayerHasTwistOfFate() then
             tinsert(prio, self.spells.swp)
         end

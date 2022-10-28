@@ -1,5 +1,5 @@
 local _G = _G
-local tinsert, tablesize = tinsert, table.getn
+local tinsert, tablesize, select = tinsert, table.getn, select
 local _, class = UnitClass('player')
 
 -- known issues
@@ -9,12 +9,16 @@ local _, class = UnitClass('player')
 --- Inits
 --------------------
 
+XerrUtils = CreateFrame("Frame")
+XerrUtils.init = false
+XerrUtils.paused = true
+XerrUtils.spellBookSpells = {}
+XerrUtils.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
+
 XerrDots = CreateFrame("Frame")
-XerrDots.paused = true
 
 XerrPrio = CreateFrame("Frame")
-XerrPrio.spellBookSpells = {}
-XerrPrio.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
+
 
 XerrDots.spells = {
     swp = {
@@ -47,7 +51,7 @@ XerrPrio.spells = {
     mb = { name = '', id = 8092, icon = '', spellBookID = 0 },
     halo = { name = '', id = 120644, icon = '', spellBookID = 0 },
     shadowfiend = { name = '', id = 34433, icon = '', spellBookID = 0 },
-    swd = { name = '', id = 32379, icon = '', lastCastTime = '', spellBookID = 0 },
+    swd = { name = '', id = 32379, icon = '', lastCastTime = 0, spellBookID = 0 },
 }
 
 XerrPrio.nextSpell = {
@@ -55,7 +59,7 @@ XerrPrio.nextSpell = {
     [2] = XerrPrio.spells.swp
 }
 
-XerrDots.cols = {
+XerrUtils.cols = {
     white = '|cffffffff',
 
     hi1 = '|cffD69637',
@@ -67,14 +71,14 @@ XerrDots.cols = {
     lo3 = '|cffD69637'
 }
 
-XerrDots.texts = {
-    haste_hi1 = XerrDots.cols.hi1 .. '>|r',
-    haste_hi2 = XerrDots.cols.hi2 .. '>>|r',
-    haste_hi3 = XerrDots.cols.hi3 .. '>>>|r',
+XerrUtils.texts = {
+    haste_hi1 = XerrUtils.cols.hi1 .. '>|r',
+    haste_hi2 = XerrUtils.cols.hi2 .. '>>|r',
+    haste_hi3 = XerrUtils.cols.hi3 .. '>>>|r',
 
-    haste_lo1 = XerrDots.cols.lo1 .. '<|r',
-    haste_lo2 = XerrDots.cols.lo2 .. '<<|r',
-    haste_lo3 = XerrDots.cols.lo3 .. '<<<|r'
+    haste_lo1 = XerrUtils.cols.lo1 .. '<|r',
+    haste_lo2 = XerrUtils.cols.lo2 .. '<<|r',
+    haste_lo3 = XerrUtils.cols.lo3 .. '<<<|r'
 }
 
 XerrDots.dotStats = {}
@@ -85,17 +89,20 @@ XerrDots.dotStats = {}
 
 -- todo check spec to be shadow
 
-XerrDots:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-XerrDots:RegisterEvent('ADDON_LOADED')
-XerrDots:RegisterEvent('PLAYER_ENTERING_WORLD')
-XerrDots:RegisterEvent('PLAYER_TARGET_CHANGED')
-XerrDots:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
-XerrDots:RegisterEvent('PLAYER_TALENT_UPDATE')
-XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
+XerrUtils:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+XerrUtils:RegisterEvent('ADDON_LOADED')
+XerrUtils:RegisterEvent('PLAYER_ENTERING_WORLD')
+XerrUtils:RegisterEvent('PLAYER_TARGET_CHANGED')
+XerrUtils:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+XerrUtils:RegisterEvent('PLAYER_TALENT_UPDATE')
+XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
     if event then
         if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' then
-            XerrPrio:Init()
+            XerrUtils:Init()
             return
+        end
+        if not XerrUtils.init then
+            return false
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
 
@@ -119,8 +126,8 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
 
                     XerrDots.dotStats[guid][key].haste = UnitSpellHaste("player");
                     XerrDots.dotStats[guid][key].sp = GetSpellBonusDamage(6);
-                    XerrDots.dotStats[guid][key].tof = XerrDots:PlayerHasTwistOfFate();
-                    XerrDots.dotStats[guid][key].uvls = XerrDots:PlayerHasUVLS();
+                    XerrDots.dotStats[guid][key].tof = XerrUtils:PlayerHasTwistOfFate();
+                    XerrDots.dotStats[guid][key].uvls = XerrUtils:PlayerHasUVLS();
 
                 end
             end
@@ -132,22 +139,22 @@ XerrDots:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg
         end
         if event == 'PLAYER_TARGET_CHANGED' then
             if not UnitExists('target') then
-                XerrDots.paused = true
+                XerrUtils.paused = true
                 XERR_PRIO_Prio:Hide()
                 return
             else
                 if UnitReaction('player', 'target') >= 5 then
-                    XerrDots.paused = true
+                    XerrUtils.paused = true
                     XERR_PRIO_Prio:Hide()
                     return
                 else
-                    XerrDots.paused = false
+                    XerrUtils.paused = false
                     XERR_PRIO_Prio:Show()
                 end
             end
         end
         if event == 'PLAYER_SPECIALIZATION_CHANGED' then
-            XerrPrio:PopulateSpellBookID()
+            XerrUtils:PopulateSpellBookID()
             return
         end
     end
@@ -157,13 +164,16 @@ end)
 ---  Init
 --------------------
 
-function XerrPrio:Init()
-    print("XerrDots OnLoad")
+function XerrUtils:Init()
+
+    if class ~= 'PRIEST' then
+        return false
+    end
 
     self:PopulateSpellBookID()
 
     for key, spell in next, XerrDots.spells do
-        spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+        spell.name, spell.icon = XerrUtils:GetSpellInfo(spell.id)
 
         local frameName = 'XERRPRIODots_' .. key
 
@@ -179,7 +189,7 @@ function XerrPrio:Init()
     end
 
     for _, spell in next, XerrPrio.spells do
-        spell.name, spell.icon = XerrDots:GetSpellInfo(spell.id)
+        spell.name, spell.icon = XerrUtils:GetSpellInfo(spell.id)
     end
     XerrPrio.spells.swd.lastCastTime = GetTime()
 
@@ -210,7 +220,6 @@ function XerrPrio:Init()
 
             XerrPrioDB.configMode = true
             XERR_PRIO_Dots:Show()
-            print('XerrPrio Dots Config Mode On')
         else
 
             for _, spell in next, XerrDots.spells do
@@ -219,14 +228,14 @@ function XerrPrio:Init()
 
             XerrPrioDB.configMode = false
             XERR_PRIO_Dots:Hide()
-            print('XerrPrio Dots Config Mode Off')
         end
     end
 
     XERR_PRIO_Prio:Hide()
+    self.init = true
 end
 
-function XerrPrio:PopulateSpellBookID()
+function XerrUtils:PopulateSpellBookID()
     self.spellBookSpells = {}
 
     local i = 1
@@ -239,7 +248,7 @@ function XerrPrio:PopulateSpellBookID()
         i = i + 1
     end
 
-    for _, spell in next, self.spells do
+    for _, spell in next, XerrPrio.spells do
         spell.spellBookID = self.spellBookSpells[spell.name] or false
     end
 end
@@ -274,27 +283,27 @@ XerrDots:SetScript("OnUpdate", function()
 
         XERR_PRIO_Dots:Hide()
 
-        if XerrDots.paused or not XerrPrioDB.dots or XerrPrioDB.configMode then
+        if XerrUtils.paused or not XerrPrioDB.dots or XerrPrioDB.configMode then
             return
         end
 
         local oneDot = false
 
         for key, spell in next, XerrDots.spells do
-            local tl, perc = XerrDots:GetDebuffInfo(spell.id)
+            local tl, perc = XerrUtils:GetDebuffInfo(spell.id)
             local frame = spell.frame:GetName()
             if tl > 0 then
 
                 oneDot = true
 
                 local haste, sp = UnitSpellHaste("player"), GetSpellBonusDamage(6)
-                local tof, uvls = XerrDots:PlayerHasTwistOfFate(),XerrDots:PlayerHasUVLS()
+                local tof, uvls = XerrUtils:PlayerHasTwistOfFate(),XerrUtils:PlayerHasUVLS()
                 local guid = UnitGUID('target')
 
                 if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
 
                     if XerrDots.dotStats[guid][key].haste > 0 then
-                        local text, p = XerrDots:PercentRefresh(haste, XerrDots.dotStats[guid][key].haste)
+                        local text, p = XerrUtils:PercentRefresh(haste, XerrDots.dotStats[guid][key].haste)
                         spell.haste_perc = p
                         _G[frame .. 'Haste']:SetText(text)
                     else
@@ -303,7 +312,7 @@ XerrDots:SetScript("OnUpdate", function()
 
                     if XerrDots.dotStats[guid][key].sp > 0 then
 
-                        local text, p = XerrDots:PercentRefresh(sp, XerrDots.dotStats[guid][key].sp)
+                        local text, p = XerrUtils:PercentRefresh(sp, XerrDots.dotStats[guid][key].sp)
                         spell.sp_perc = p
                         _G[frame .. 'SP']:SetText(text)
 
@@ -389,7 +398,7 @@ XerrPrio:SetScript("OnUpdate", function()
 
         XerrPrio.start = GetTime()
 
-        if XerrDots.paused or not XerrPrioDB.prio or XerrPrioDB.configMode then
+        if XerrUtils.paused or not XerrPrioDB.prio or XerrPrioDB.configMode then
             XerrPrio.nextSpell = {
                 [1] = { id = 0, name = ''},
                 [2] = { id = 0, name = ''}
@@ -415,12 +424,12 @@ end)
 --- Helpers
 --------------------
 
-function XerrDots:GetSpellInfo(id)
-    local name, _, icon = GetSpellInfo(id)
-    return name, icon
+function XerrUtils:GetSpellInfo(id)
+    local name, _, icon, _, _, _, castTime = GetSpellInfo(id)
+    return name, icon, castTime / 1000
 end
 
-function XerrDots:GetDebuffInfo(id)
+function XerrUtils:GetDebuffInfo(id)
     if not UnitExists('target') then
         return 0, 0
     end
@@ -437,7 +446,7 @@ function XerrDots:GetDebuffInfo(id)
     return 0, 0
 end
 
-function XerrDots:PlayerHasTwistOfFate()
+function XerrUtils:PlayerHasTwistOfFate()
     for i = 1, 40 do
         local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
         if id == 123254 then
@@ -447,7 +456,7 @@ function XerrDots:PlayerHasTwistOfFate()
     return false
 end
 
-function XerrDots:PlayerHasUVLS()
+function XerrUtils:PlayerHasUVLS()
     for i = 1, 40 do
         local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
         if id == 138963 then
@@ -457,7 +466,7 @@ function XerrDots:PlayerHasUVLS()
     return false
 end
 
-function XerrDots:PercentRefresh(current, dot)
+function XerrUtils:PercentRefresh(current, dot)
     local perc = math.floor((current / dot) * 100)
 
     local color = self.cols.white
@@ -486,7 +495,7 @@ function XerrDots:PercentRefresh(current, dot)
 
 end
 
-function XerrDots:HasteRefreshText(diff)
+function XerrUtils:HasteRefreshText(diff)
     if diff > 9 and diff < 20 then
         return self.texts.haste_hi1
     elseif diff >= 20 and diff < 30 then
@@ -504,7 +513,7 @@ function XerrDots:HasteRefreshText(diff)
     end
 end
 
-function XerrDots:SpellPowerRefreshText(diff)
+function XerrUtils:SpellPowerRefreshText(diff)
     if diff > 1550 and diff < 3700 then
         return self.cols.hi1 .. '+' .. math.floor(diff / 1000) .. 'k|r'
     elseif diff >= 3700 and diff < 7000 then
@@ -522,28 +531,29 @@ function XerrDots:SpellPowerRefreshText(diff)
     end
 end
 
+function XerrUtils:GetWAIconColor(spell)
 
-function XerrPrio:GetWAIconColor(spell)
-
-    if not UnitExists('target') or XerrDots.paused then
+    if not UnitExists('target') or XerrUtils.paused then
         return 1, 1, 1, 1
     end
 
-    local inRange = IsSpellInRange(spell.spellBookID, "target") == 1
-    local isNext = self.nextSpell[1].id == spell.id
-    local isNext2 = self.nextSpell[2].id == spell.id
+    local inRange = false
+    local isNext = XerrPrio.nextSpell[1].id == spell.id
+    local isNext2 = XerrPrio.nextSpell[2].id == spell.id
 
-    if spell.id == self.spells.halo.id then
+    if spell.id == XerrPrio.spells.halo.id then
         inRange = false
         local hp = HaloPro_MainFrame
         if hp.texture:GetTexture() then
             local hpt = hp.texture:GetTexture()
             if hpt == self.hp_path .. 'left' then
+                --
             elseif hpt == self.hp_path .. 'center' then
                 inRange = true
             end
         end
-
+    else
+        inRange = IsSpellInRange(spell.spellBookID, "target") == 1
     end
 
     if inRange then
@@ -560,51 +570,111 @@ function XerrPrio:GetWAIconColor(spell)
     return 1, 0.2, 0.2, 1, isNext, isNext2, inRange
 end
 
+
+
+--N	13.99	shadow_word_pain,if=ticks_remain<=1
+--O	15.98	vampiric_touch,max_cycle_targets=5,if=remains<cast_time+tick_time
+--P	0.00	vampiric_embrace,if=shadow_orb=3&health.pct<=40
+--Q	16.62	devouring_plague,if=shadow_orb=3
+--V	0.64	wait,sec=cooldown.shadow_word_death.remains,if=target.health.pct<20&cooldown.shadow_word_death.remains<0.5
+--W	10.73	wait,sec=cooldown.mind_blast.remains,if=cooldown.mind_blast.remains<0.5
+--Z	123.92	mind_flay,chain=1,interrupt=1
+--a	0.00	shadow_word_death,moving=1
+--e	0.00	shadow_word_pain,moving=1
+
+
 function XerrPrio:GetNextSpell()
 
     local prio = {}
 
-    --tinsert(prio, self.spells.mf)
-    --tinsert(prio, self.spells.dp)
-    --if true then return prio end
-
-    -- halo
-    if self.spells.halo.spellBookID and self:GetSpellCooldown(self.spells.halo.id) == 0 then
-        tinsert(prio, self.spells.halo)
-    end
-
-    -- refresh swp or vt, only if mindblast is on cd and both sp/haste are better
-    if self:GetSpellCooldown(self.spells.mb.id) > 1.5 then
-        if XerrDots.spells.swp.haste_perc > 110 and XerrDots.spells.swp.sp_perc > 110 then
+    -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
+    if XerrUtils:GetSpellCooldown(self.spells.mb.id) > 1.5 and XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
+        -- swp if haste is at least 20% better
+        if XerrDots.spells.swp.haste_perc > 20 and XerrDots.spells.swp.sp_perc >= 0 then
             tinsert(prio, self.spells.swp)
         end
-        if XerrDots.spells.vt.haste_perc > 110 and XerrDots.spells.vt.sp_perc > 110 then
+        -- vt if haste is at least 20% better
+        if XerrDots.spells.vt.haste_perc > 20 and XerrDots.spells.vt.sp_perc >= 0 then
             tinsert(prio, self.spells.vt)
         end
-        -- todo add refresh for uvls and tof
+
+        -- swp if sp is at least 20% better
+        if XerrDots.spells.swp.sp_perc > 20 and XerrDots.spells.swp.haste_perc >= 0 then
+            tinsert(prio, self.spells.swp)
+        end
+        -- vt if sp is at least 20% better
+        if XerrDots.spells.vt.sp_perc > 20 and XerrDots.spells.vt.haste_perc >= 0 then
+            tinsert(prio, self.spells.vt)
+        end
+
+        -- swp
+        if XerrDots.spells.swp.haste_perc > 10 and XerrDots.spells.swp.sp_perc > 10 then
+            tinsert(prio, self.spells.swp)
+        end
+        -- vt
+        if XerrDots.spells.vt.haste_perc > 10 and XerrDots.spells.vt.sp_perc > 10 then
+            tinsert(prio, self.spells.vt)
+        end
+        -- todo refresh for uvls
+
+        -- refresh if i have tof and dots dont
+        local guid = UnitGUID('target')
+
+        if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.tof and XerrUtils:PlayerHasTwistOfFate() then
+            tinsert(prio, self.spells.swp)
+        end
+        if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.tof and XerrUtils:PlayerHasTwistOfFate() then
+            tinsert(prio, self.spells.vt)
+        end
     end
 
     if tablesize(prio) == 2 then
         return prio
     end
 
-    -- plague
-    if self:GetShadowOrbs() == 3 then
+    -- halo when offcooldown and no dp
+    if self.spells.halo.spellBookID and XerrUtils:GetSpellCooldown(self.spells.halo.id) == 0 then
+        if XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
+            tinsert(prio, self.spells.halo)
+        end
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
+    --F	6.82	shadow_word_death,if=buff.shadow_word_death_reset_cooldown.stack=1
+    --todo
+
+    -- devouring plague
+    if XerrUtils:GetShadowOrbs() == 3 then
         tinsert(prio, self.spells.dp)
     end
+
+    -- mindblast and dp after if we'll have 3 orbs after mindblast
+    if XerrUtils:GetSpellCooldown(self.spells.mb.id) == 0 then
+        tinsert(prio, self.spells.mb)
+        if XerrUtils:GetShadowOrbs() == 2 then
+            tinsert(prio, self.spells.dp)
+        end
+    end
+
+    --I	6.97	shadow_word_death,if=buff.shadow_word_death_reset_cooldown.stack=0
+    --todo
+
 
     if tablesize(prio) == 2 then
         return prio
     end
 
     -- shadow word: death
-    if self:ExecutePhase() and self:GetSpellCooldown(self.spells.swd.id) == 0 then
-        if XerrDots:GetDebuffInfo(self.spells.dp.id) >= 0.2 then
+    if XerrUtils:ExecutePhase() and XerrUtils:GetSpellCooldown(self.spells.swd.id) == 0 then
+        if XerrUtils:GetDebuffInfo(self.spells.dp.id) >= 0.2 then
             if GetTime() - self.spells.swd.lastCastTime >= 8 then
                 tinsert(prio, self.spells.swd)
-            elseif self:GetSpellCooldown(self.spells.mb.id) == 0 then
+            elseif XerrUtils:GetSpellCooldown(self.spells.mb.id) == 0 then
                 tinsert(prio, self.spells.mb)
-                if self:GetShadowOrbs() == 2 then
+                if XerrUtils:GetShadowOrbs() == 2 then
                     tinsert(prio, self.spells.dp)
                 end
             else
@@ -619,31 +689,8 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
-    -- mind blast
-    if self:GetSpellCooldown(self.spells.mb.id) <= 0.1 then
-        tinsert(prio, self.spells.mb)
-        if self:GetShadowOrbs() == 2 then
-            tinsert(prio, self.spells.dp)
-        end
-    end
-
-    if tablesize(prio) == 2 then
-        return prio
-    end
-
-    -- shadowfiend
-    if self:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
-        tinsert(prio, self.spells.shadowfiend)
-    end
-
-
-    if tablesize(prio) == 2 then
-        return prio
-    end
-
-
-    -- mindflay insanity
-    if XerrDots:GetDebuffInfo(self.spells.dp.id) >= 0.1 then
+    -- insanity
+    if XerrUtils:GetDebuffInfo(self.spells.dp.id) > 0 then
         tinsert(prio, self.spells.mf)
     end
 
@@ -651,8 +698,17 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
+    -- shadowfiend
+    if XerrUtils:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
+        tinsert(prio, self.spells.shadowfiend)
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
     -- swp
-    if XerrDots:GetDebuffInfo(self.spells.swp.id) < 0.5 then
+    if XerrUtils:GetDebuffInfo(self.spells.swp.id) < 0.5 then
         tinsert(prio, self.spells.swp)
     end
 
@@ -661,12 +717,11 @@ function XerrPrio:GetNextSpell()
     end
 
     -- vt
-    if XerrDots:GetDebuffInfo(self.spells.vt.id) <= 1 then
-        tinsert(prio, self.spells.vt)
-    end
-
-    if tablesize(prio) == 2 then
-        return prio
+    --M	7.03	vampiric_touch,if=remains<cast_time
+    if XerrUtils:GetDebuffInfo(self.spells.vt.id) >= 0 then
+        if XerrUtils:GetDebuffInfo(self.spells.vt.id) < select(3, XerrUtils:GetSpellInfo(self.spells.vt.id)) then
+            tinsert(prio, self.spells.vt)
+        end
     end
 
     if tablesize(prio) == 2 then
@@ -676,23 +731,43 @@ function XerrPrio:GetNextSpell()
     -- mind flay if nothing else is available
     tinsert(prio, self.spells.mf)
 
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
     -- mind blast 2nd if cd <= 0.5s
-    if self:GetSpellCooldown(self.spells.mb.id) <= 1 then
+    if prio[1] and prio[1].id ~= self.spells.mb.id and XerrUtils:GetSpellCooldown(self.spells.mb.id) <= 1 then
         if prio[2] and prio[2].id ~= self.spells.dp.id then
             prio[2] = self.spells.mb
         end
     end
 
     if tablesize(prio) == 1 then
-        if self:GetSpellCooldown(self.spells.mb.id) < self:GetSpellCooldown(self.spells.halo.id) then
+        if XerrUtils:GetSpellCooldown(self.spells.mb.id) < XerrUtils:GetSpellCooldown(self.spells.halo.id) then
             tinsert(prio, self.spells.mb)
         end
+        tinsert(prio, self.spells.mf)
     end
 
     return prio
 end
 
-function XerrPrio:GetSpellCooldown(id)
+function XerrUtils:TimeSinceLastSWD()
+    if self:GetDebuffInfo(XerrPrio.spells.dp.id) >= 0.2 then
+        local t = math.floor(GetTime() - XerrPrio.spells.swd.lastCastTime)
+        local cd = 8 - t
+        if cd > 0 then
+            return cd
+        end
+    end
+    local cd = self:GetSpellCooldown(XerrPrio.spells.swd.id)
+    if cd > 0 then
+        return cd
+    end
+    return ''
+end
+
+function XerrUtils:GetSpellCooldown(id)
     local start, duration, enabled = GetSpellCooldown(id);
     if enabled == 0 then
         return 0 --active, like pom
@@ -705,7 +780,7 @@ function XerrPrio:GetSpellCooldown(id)
     return 0
 end
 
-function XerrPrio:GetGCD()
+function XerrUtils:GetGCD()
     local start, duration = GetSpellCooldown(61304);
     if start > 0 and duration > 0 then
         return start + duration - GetTime()
@@ -713,11 +788,11 @@ function XerrPrio:GetGCD()
     return 0
 end
 
-function XerrPrio:GetShadowOrbs()
+function XerrUtils:GetShadowOrbs()
     return UnitPower("player", SPELL_POWER_SHADOW_ORBS)
 end
 
-function XerrPrio:ExecutePhase()
+function XerrUtils:ExecutePhase()
     if not UnitExists('target') then
         return false
     end

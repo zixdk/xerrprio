@@ -109,22 +109,16 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
 
                     if not XerrDots.dotStats[guid][key] then
                         XerrDots.dotStats[guid][key] = {
-                            haste = 0,
-                            sp = 0,
                             tof = false,
                             uvls = false,
                             dps = 0
                         }
                     end
 
-                    XerrDots.dotStats[guid][key].tof = XerrUtils:PlayerHasTwistOfFate();
-                    XerrDots.dotStats[guid][key].uvls = XerrUtils:PlayerHasUVLS();
+                    XerrDots.dotStats[guid][key].tof = XerrUtils:PlayerHasTwistOfFate()
+                    XerrDots.dotStats[guid][key].uvls = XerrUtils:PlayerHasUVLS()
 
-                    _,_, XerrDots.dotStats[guid][key].dps = XerrUtils:GetSpellDamage(spell.id)
-
-                    if XerrDots.dotStats[guid][key].tof then
-                        XerrDots.dotStats[guid][key].dps = XerrDots.dotStats[guid][key].dps * 1.5
-                    end
+                    XerrDots.dotStats[guid][key].dps = XerrUtils:GetSpellDamage(spell.id)
 
                 end
             end
@@ -297,34 +291,22 @@ XerrDots:SetScript("OnUpdate", function()
 
                 oneDot = true
 
-                local haste, sp = UnitSpellHaste("player"), GetSpellBonusDamage(6)
                 local tof, uvls = XerrUtils:PlayerHasTwistOfFate(), XerrUtils:PlayerHasUVLS()
                 local guid = UnitGUID('target')
 
                 if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
 
-                    local _, _, current_dps = XerrUtils:GetSpellDamage(spell.id)
-                    if tof then
-                        current_dps = current_dps * 1.5
-                    end
+                    local current_dps = XerrUtils:GetSpellDamage(spell.id)
 
                     if current_dps > XerrDots.dotStats[guid][key].dps then
-                        _G[frame .. 'Refresh']:SetText('R:' .. string.format("%.2f", current_dps / XerrDots.dotStats[guid][key].dps) .. 'x')
+                        _G[frame .. 'Refresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrDots.dotStats[guid][key].dps) .. 'x')
                     else
                         _G[frame .. 'Refresh']:SetText('=')
                     end
 
-                end
-
-                if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
-
                     if tof then
                         _G[frame .. 'ToF']:SetText('ToF')
-                        if XerrDots.dotStats[guid][key].tof then
-                            _G[frame .. 'ToF']:SetTextColor(0, 1, 0)
-                        else
-                            _G[frame .. 'ToF']:SetTextColor(1, 0, 0)
-                        end
+                        _G[frame .. 'ToF']:SetTextColor(XerrDots.dotStats[guid][key].tof and 0 or 1, XerrDots.dotStats[guid][key].tof and 1 or 0, 0)
                     else
                         if XerrDots.dotStats[guid][key].tof then
                             _G[frame .. 'ToF']:SetText('ToF')
@@ -336,11 +318,7 @@ XerrDots:SetScript("OnUpdate", function()
 
                     if uvls then
                         _G[frame .. 'UVLS']:SetText('UVLS')
-                        if XerrDots.dotStats[guid][key].uvls then
-                            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
-                        else
-                            _G[frame .. 'UVLS']:SetTextColor(1, 0, 0)
-                        end
+                        _G[frame .. 'UVLS']:SetTextColor(XerrDots.dotStats[guid][key].uvls and 0 or 1, XerrDots.dotStats[guid][key].uvls and 1 or 0, 0)
                     else
                         if XerrDots.dotStats[guid][key].uvls then
                             _G[frame .. 'UVLS']:SetText('UVLS')
@@ -529,45 +507,31 @@ function XerrPrio:GetNextSpell()
 
     local guid = UnitGUID('target')
     -- refresh dots if uvls procd
-    if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.uvls and XerrUtils:PlayerHasUVLS() then
-        tinsert(prio, self.spells.swp)
-    end
-    if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.uvls and XerrUtils:PlayerHasUVLS() then
-        tinsert(prio, self.spells.vt)
+    if XerrUtils:PlayerHasUVLS() and XerrDots.dotStats[guid] then
+        if XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.uvls then
+            tinsert(prio, self.spells.swp)
+        end
+        if XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.uvls then
+            tinsert(prio, self.spells.vt)
+        end
     end
 
     -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
     if XerrUtils:GetSpellCooldown(self.spells.mb.id) > 1.5 and XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
 
         if XerrDots.dotStats[guid] then
-
-            local tof = XerrUtils:PlayerHasTwistOfFate()
-
             if XerrDots.dotStats[guid].swp then
-                local current_dps = XerrDots.dotStats[guid].swp.dps * (tof and 1.5 or 1)
-                if current_dps > XerrDots.dotStats[guid].swp.dps then
+                if XerrUtils:GetSpellDamage(self.spells.swp.id) > XerrDots.dotStats[guid].swp.dps then
                     tinsert(prio, self.spells.swp)
                 end
             end
-
-            if XerrDots.dotStats[guid].swp then
-                local current_dps = XerrDots.dotStats[guid].vt.dps * (tof and 1.5 or 1)
-                if current_dps > XerrDots.dotStats[guid].vt.dps then
+            if XerrDots.dotStats[guid].vt then
+                if XerrUtils:GetSpellDamage(self.spells.vt.id) > XerrDots.dotStats[guid].vt.dps then
                     tinsert(prio, self.spells.vt)
                 end
             end
-
         end
 
-
-        -- refresh if i have tof and dots dont
-        -- maybe check for sp/haste too here
-        --if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.tof and XerrUtils:PlayerHasTwistOfFate() then
-        --    tinsert(prio, self.spells.swp)
-        --end
-        --if XerrDots.dotStats[guid] and XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.tof and XerrUtils:PlayerHasTwistOfFate() then
-        --    tinsert(prio, self.spells.vt)
-        --end
     end
 
     if tablesize(prio) == 2 then
@@ -779,7 +743,7 @@ function XerrUtils:GetSpellDamage(spellId)
 
     dps = tonumber(totalDmg) / tonumber(tickTime)
 
-    return totalDmg, tickTime, dps
+    return dps, totalDmg, tickTime
 
 end
 

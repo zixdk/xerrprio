@@ -2,6 +2,8 @@
     xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
     <Script file="xerrprio.lua"/>
 
+    <GameTooltip name="XerrPrioTooltipFrame" frameStrata="TOOLTIP" hidden="true" parent="UIParent" inherits="GameTooltipTemplate"/>
+
     <Frame name="XerrPrioFrameTemplate" virtual="true" alpha="0.9">
         <Size>
             <AbsDimension x="280" y="24"/>
@@ -55,7 +57,7 @@
                     </Anchors>
                 </Texture>
 
-                <FontString name="$parentHaste" inherits="GameFontNormal" justifyH="LEFT" text="120%">
+                <FontString name="$parentRefresh" inherits="GameFontNormal" justifyH="LEFT" text="Longertext">
                     <Anchors>
                         <Anchor point="LEFT">
                             <Offset>
@@ -64,20 +66,7 @@
                         </Anchor>
                     </Anchors>
                     <Size>
-                        <AbsDimension x="40" y="30"/>
-                    </Size>
-                </FontString>
-
-                <FontString name="$parentSP" inherits="GameFontNormal" justifyH="LEFT" text="105%">
-                    <Anchors>
-                        <Anchor point="LEFT">
-                            <Offset>
-                                <AbsDimension x="50" y="0"/>
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                    <Size>
-                        <AbsDimension x="40" y="30"/>
+                        <AbsDimension x="140" y="30"/>
                     </Size>
                 </FontString>
 

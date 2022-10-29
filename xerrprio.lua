@@ -79,17 +79,14 @@ XerrDots.dotStats = {}
 --- Events
 --------------------
 
--- todo check spec to be shadow
-
 XerrUtils:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 XerrUtils:RegisterEvent('ADDON_LOADED')
 XerrUtils:RegisterEvent('PLAYER_ENTERING_WORLD')
 XerrUtils:RegisterEvent('PLAYER_TARGET_CHANGED')
 XerrUtils:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
-XerrUtils:RegisterEvent('PLAYER_TALENT_UPDATE')
 XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
     if event then
-        if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' then
+        if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_SPECIALIZATION_CHANGED' then
             XerrUtils:Init()
             return
         end
@@ -126,7 +123,7 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
             if arg5 == XerrPrio.spells.swd.id then
                 XerrPrio.spells.swd.lastCastTime = GetTime()
             end
-
+            return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
             if not UnitExists('target') then
@@ -134,7 +131,7 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
                 XERR_PRIO_Prio:Hide()
                 return
             else
-                if UnitReaction('player', 'target') >= 5 then
+                if UnitReaction('player', 'target') and UnitReaction('player', 'target') >= 5 then
                     XerrUtils.paused = true
                     XERR_PRIO_Prio:Hide()
                     return
@@ -143,11 +140,9 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
                     XERR_PRIO_Prio:Show()
                 end
             end
-        end
-        if event == 'PLAYER_SPECIALIZATION_CHANGED' then
-            XerrUtils:PopulateSpellBookID()
             return
         end
+
     end
 end)
 
@@ -157,7 +152,9 @@ end)
 
 function XerrUtils:Init()
 
-    if class ~= 'PRIEST' then
+    self.init = false
+
+    if class ~= 'PRIEST' or GetSpecialization() ~= 3 then
         XERR_PRIO_Dots:Hide()
         XERR_PRIO_Prio:Hide()
         return false

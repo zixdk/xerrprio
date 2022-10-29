@@ -445,13 +445,12 @@ function XerrUtils:GetWAIconColor(spell)
     local inRange = false
     local isNext = XerrPrio.nextSpell[1].id == spell.id
     local isNext2 = XerrPrio.nextSpell[2].id == spell.id
-    local icon = self.hp_path .. 'center'
+    local icon = self.hp_path_icon .. 'center'
 
     if spell.id == XerrPrio.spells.halo.id then
         inRange = false
-        local hp = HaloPro_MainFrame
-        if hp.texture:GetTexture() then
-            local hpt = hp.texture:GetTexture()
+        if HaloPro_MainFrame and HaloPro_MainFrame.texture:GetTexture() then
+            local hpt = HaloPro_MainFrame.texture:GetTexture()
             if hpt == self.hp_path .. 'left' then
                 icon = 'left'
             elseif hpt == self.hp_path .. 'mid_left' then
@@ -814,3 +813,29 @@ function SlashCmdList.XERRPRIO(arg)
     print('config: ' .. (XerrPrioDB.config and 'on' or 'off'))
 
 end
+
+
+--------------------
+--- Options
+--------------------
+
+--function XerrUtils:CreateOptions()
+--
+--    local options = {
+--        type = "group",
+--        name = "XerrPrio",
+--        args = {
+--            newStyle = {
+--                order = 2,
+--                name = "Config mode",
+--                desc = "Config mode desc",
+--                type = "toggle",
+--                width = "full",
+--                set = function(info,val) XerrPrioDB.configMode = val end,
+--                get = function(info) return XerrPrioDB.configMode end
+--            }
+--        }
+--    }
+--
+--    return options
+--end

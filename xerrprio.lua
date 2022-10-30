@@ -84,9 +84,10 @@ XerrUtils:RegisterEvent('ADDON_LOADED')
 XerrUtils:RegisterEvent('PLAYER_ENTERING_WORLD')
 XerrUtils:RegisterEvent('PLAYER_TARGET_CHANGED')
 XerrUtils:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+XerrUtils:RegisterEvent('PLAYER_TALENT_UPDATE')
 XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
     if event then
-        if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_SPECIALIZATION_CHANGED' then
+        if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_TALENT_UPDATE' then
             XerrUtils:Init()
             return
         end

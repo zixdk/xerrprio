@@ -56,8 +56,8 @@ XerrPrio.spells = {
 }
 
 XerrPrio.nextSpell = {
-    [1] = XerrPrio.spells.swp,
-    [2] = XerrPrio.spells.swp
+    [1] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' },
+    [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
 }
 
 XerrUtils.cols = {
@@ -126,6 +126,12 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
             return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
+            if  XerrPrioDB.configMode then
+                XERR_PRIO_Dots:Show()
+                XERR_PRIO_Prio:Show()
+                XerrUtils.paused = false
+                return
+            end
             if not UnitExists('target') then
                 XerrUtils.paused = true
                 XERR_PRIO_Prio:Hide()
@@ -167,7 +173,9 @@ function XerrUtils:Init()
 
         local frameName = 'XERRPRIODots_' .. key
 
-        spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
+        if not spell.frame then
+            spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
+        end
 
         _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
 
@@ -203,26 +211,33 @@ function XerrUtils:Init()
         XerrPrio:Hide()
     end
 
+    XerrUtils:UpdateConfigMode()
+
+    self.init = true
+end
+
+function XerrUtils:UpdateConfigMode()
+
     if XerrPrioDB.configMode then
 
         for _, spell in next, XerrDots.spells do
             spell.frame:Show()
         end
 
-        XerrPrioDB.configMode = true
+        XerrUtils.paused = false
         XERR_PRIO_Dots:Show()
+        XERR_PRIO_Prio:Show()
+        print('XerrPrio Dots Config Mode On')
     else
 
         for _, spell in next, XerrDots.spells do
             spell.frame:Hide()
         end
 
-        XerrPrioDB.configMode = false
         XERR_PRIO_Dots:Hide()
+        XERR_PRIO_Prio:Hide()
+        print('XerrPrio Dots Config Mode Off')
     end
-
-    XERR_PRIO_Prio:Hide()
-    self.init = true
 end
 
 function XerrUtils:PopulateSpellBookID()
@@ -273,9 +288,11 @@ XerrDots:SetScript("OnUpdate", function()
 
         XerrDots.start = GetTime()
 
-        XERR_PRIO_Dots:Hide()
+        if XerrPrioDB.configMode then
+            return
+        end
 
-        if XerrUtils.paused or not XerrPrioDB.dots or XerrPrioDB.configMode then
+        if XerrUtils.paused or not XerrPrioDB.dots then
             return
         end
 
@@ -340,6 +357,8 @@ XerrDots:SetScript("OnUpdate", function()
 
         if oneDot then
             XERR_PRIO_Dots:Show()
+        else
+            XERR_PRIO_Dots:Hide()
         end
     end
 end)
@@ -368,25 +387,24 @@ XerrPrio:SetScript("OnUpdate", function()
 
         XerrPrio.start = GetTime()
 
-        if XerrUtils.paused or not XerrPrioDB.prio or XerrPrioDB.configMode then
+        if XerrPrioDB.configMode then
             XerrPrio.nextSpell = {
-                [1] = { id = 0, name = '' },
-                [2] = { id = 0, name = '' }
+                [1] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' },
+                [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
             }
-            return
         end
-        XerrPrio.nextSpell = XerrPrio:GetNextSpell()
 
-        if XerrPrio.nextSpell[1] then
-            XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
-        else
-            XERR_PRIO_PrioIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        if XerrUtils.paused or not XerrPrioDB.prio then
+            XERR_PRIO_Prio:Hide()
         end
-        if XerrPrio.nextSpell[2] then
-            XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
-        else
-            XERR_PRIO_PrioIcon2:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+        if not XerrUtils.paused and XerrPrio.prio and not XerrPrioDB.configMode then
+            XerrPrio.nextSpell = XerrPrio:GetNextSpell()
+            XERR_PRIO_Prio:Show()
         end
+
+        XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
+        XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
     end
 end)
 
@@ -783,26 +801,7 @@ function SlashCmdList.XERRPRIO(arg)
 
         if arg == 'config' then
             XerrPrioDB.configMode = not XerrPrioDB.configMode
-
-            if XerrPrioDB.configMode then
-
-                for _, spell in next, XerrDots.spells do
-                    spell.frame:Show()
-                end
-
-                XerrPrioDB.configMode = true
-                XERR_PRIO_Dots:Show()
-                print('XerrPrio Dots Config Mode On')
-            else
-
-                for _, spell in next, XerrDots.spells do
-                    spell.frame:Hide()
-                end
-
-                XerrPrioDB.configMode = false
-                XERR_PRIO_Dots:Hide()
-                print('XerrPrio Dots Config Mode Off')
-            end
+            XerrUtils:UpdateConfigMode()
             return
         end
     end

@@ -1,6 +1,6 @@
 local _G = _G
 local tinsert, tablesize, select, strfind, strsplit, tonumber = tinsert, table.getn, select, strfind, strsplit, tonumber
-local gsub, strsub, strlen = string.gsub, strsub, strlen
+local gsub, strsub, strlen, sformat = string.gsub, strsub, strlen, string.format
 local _, class = UnitClass('player')
 
 -- known issues
@@ -94,35 +94,7 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
             return false
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
-
-            local guid = UnitGUID('target')
-
-            for key, spell in next, XerrDots.spells do
-                if arg5 == spell.id then
-
-                    if not XerrDots.dotStats[guid] then
-                        XerrDots.dotStats[guid] = {}
-                    end
-
-                    if not XerrDots.dotStats[guid][key] then
-                        XerrDots.dotStats[guid][key] = {
-                            tof = false,
-                            uvls = false,
-                            dps = 0
-                        }
-                    end
-
-                    XerrDots.dotStats[guid][key].tof = XerrUtils:PlayerHasTwistOfFate()
-                    XerrDots.dotStats[guid][key].uvls = XerrUtils:PlayerHasUVLS()
-
-                    XerrDots.dotStats[guid][key].dps = XerrUtils:GetSpellDamage(spell.id)
-
-                end
-            end
-
-            if arg5 == XerrPrio.spells.swd.id then
-                XerrPrio.spells.swd.lastCastTime = GetTime()
-            end
+            XerrUtils:SpellCast(arg5)
             return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
@@ -193,7 +165,7 @@ function XerrUtils:Init()
 
     if not XerrPrioDB then
         XerrPrioDB = {
-            bars = false,
+            dots = false,
             prio = false,
             configMode = false
         }
@@ -205,59 +177,11 @@ function XerrUtils:Init()
         XerrDots:Hide()
     end
 
-    if XerrPrioDB.prio then
-        XerrPrio:Show()
-    else
-        XerrPrio:Hide()
-    end
+    XerrPrio:Show()
 
     XerrUtils:UpdateConfigMode()
 
     self.init = true
-end
-
-function XerrUtils:UpdateConfigMode()
-
-    if XerrPrioDB.configMode then
-
-        for _, spell in next, XerrDots.spells do
-            spell.frame:Show()
-        end
-
-        XerrUtils.paused = false
-        XERR_PRIO_Dots:Show()
-        XERR_PRIO_Prio:Show()
-        print('XerrPrio Dots Config Mode On')
-    else
-
-        for _, spell in next, XerrDots.spells do
-            spell.frame:Hide()
-        end
-
-        XERR_PRIO_Dots:Hide()
-        XERR_PRIO_Prio:Hide()
-        print('XerrPrio Dots Config Mode Off')
-    end
-end
-
-function XerrUtils:PopulateSpellBookID()
-    self.spellBookSpells = {}
-
-    local i = 1
-    while true do
-        local spellName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
-        if not spellName then
-            do
-                break
-            end
-        end
-        self.spellBookSpells[spellName] = i
-        i = i + 1
-    end
-
-    for _, spell in next, XerrPrio.spells do
-        spell.spellBookID = self.spellBookSpells[spell.name] or false
-    end
 end
 
 --------------------
@@ -387,7 +311,7 @@ XerrPrio:SetScript("OnUpdate", function()
 
         XerrPrio.start = GetTime()
 
-        if XerrPrioDB.configMode then
+        if XerrPrioDB.configMode or XerrUtils.paused then
             XerrPrio.nextSpell = {
                 [1] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' },
                 [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
@@ -398,9 +322,13 @@ XerrPrio:SetScript("OnUpdate", function()
             XERR_PRIO_Prio:Hide()
         end
 
-        if not XerrUtils.paused and XerrPrio.prio and not XerrPrioDB.configMode then
+        if not XerrUtils.paused and not XerrPrioDB.configMode then
             XerrPrio.nextSpell = XerrPrio:GetNextSpell()
             XERR_PRIO_Prio:Show()
+        end
+
+        if not XerrPrioDB.prio then
+            XERR_PRIO_Prio:Hide()
         end
 
         XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
@@ -411,6 +339,43 @@ end)
 --------------------
 --- Helpers
 --------------------
+
+function XerrUtils:SpellCast(id)
+
+    if not XerrPrioDB.prio and not XerrPrioDB.dots then
+        return
+    end
+
+    local guid = UnitGUID('target')
+
+    for key, spell in next, XerrDots.spells do
+        if id == spell.id then
+
+            if not XerrDots.dotStats[guid] then
+                XerrDots.dotStats[guid] = {}
+            end
+
+            if not XerrDots.dotStats[guid][key] then
+                XerrDots.dotStats[guid][key] = {
+                    tof = false,
+                    uvls = false,
+                    dps = 0
+                }
+            end
+
+            XerrDots.dotStats[guid][key].tof = self:PlayerHasTwistOfFate()
+            XerrDots.dotStats[guid][key].uvls = self:PlayerHasUVLS()
+
+            XerrDots.dotStats[guid][key].dps = self:GetSpellDamage(spell.id)
+
+            return
+        end
+    end
+
+    if id == XerrPrio.spells.swd.id then
+        XerrPrio.spells.swd.lastCastTime = GetTime()
+    end
+end
 
 function XerrUtils:GetSpellInfo(id)
     local name, _, icon, _, _, _, castTime = GetSpellInfo(id)
@@ -514,6 +479,50 @@ end
 --a	0.00	shadow_word_death,moving=1
 --e	0.00	shadow_word_pain,moving=1
 
+
+function XerrUtils:UpdateConfigMode()
+
+    if XerrPrioDB.configMode then
+
+        for _, spell in next, XerrDots.spells do
+            spell.frame:Show()
+        end
+
+        XerrUtils.paused = false
+        XERR_PRIO_Dots:Show()
+        XERR_PRIO_Prio:Show()
+        print('XerrPrio Dots Config Mode On')
+    else
+
+        for _, spell in next, XerrDots.spells do
+            spell.frame:Hide()
+        end
+
+        XERR_PRIO_Dots:Hide()
+        XERR_PRIO_Prio:Hide()
+        print('XerrPrio Dots Config Mode Off')
+    end
+end
+
+function XerrUtils:PopulateSpellBookID()
+    self.spellBookSpells = {}
+
+    local i = 1
+    while true do
+        local spellName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
+        if not spellName then
+            do
+                break
+            end
+        end
+        self.spellBookSpells[spellName] = i
+        i = i + 1
+    end
+
+    for _, spell in next, XerrPrio.spells do
+        spell.spellBookID = self.spellBookSpells[spell.name] or false
+    end
+end
 
 function XerrPrio:GetNextSpell()
 
@@ -674,18 +683,17 @@ function XerrPrio:GetNextSpell()
 end
 
 function XerrUtils:TimeSinceLastSWD()
-    if self:GetDebuffInfo(XerrPrio.spells.dp.id) >= 0.2 then
-        local t = math.floor(GetTime() - XerrPrio.spells.swd.lastCastTime)
-        local cd = 8 - t
-        if cd > 0 then
-            return cd
+    local t = GetTime() - XerrPrio.spells.swd.lastCastTime
+    local icd = 8 - t
+    if icd > 0 and self:GetSpellCooldown(XerrPrio.spells.swd.id) == 0  then
+        return 'i' .. sformat(icd > 2 and "%d" or "%.1f", icd)
+    else
+        local cd = self:GetSpellCooldown(XerrPrio.spells.swd.id)
+        if cd == 0 then
+            return ''
         end
+        return sformat(icd > 2 and "%d" or "%.1f", cd)
     end
-    local cd = self:GetSpellCooldown(XerrPrio.spells.swd.id)
-    if cd > 0 then
-        return cd
-    end
-    return ''
 end
 
 function XerrUtils:GetSpellCooldown(id)
@@ -736,23 +744,24 @@ function XerrUtils:replace(text, search, replace)
     return searchedtext
 end
 
-function XerrUtils:GetSpellDamage(spellId)
+function XerrUtils:GetSpellDamage(id)
+
     XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")
-    XerrPrioTooltipFrame:SetSpellByID(spellId);
+    XerrPrioTooltipFrame:SetSpellByID(id);
     local tooltipDescription = XerrPrioTooltipFrameTextLeft4:GetText();
     local totalDmg, tickTime, dps = 0, 0, 0
 
-    if string.find(tooltipDescription,"Cooldown remaining") then
+    if strfind(tooltipDescription,"Cooldown remaining") then
         tooltipDescription = XerrPrioTooltipFrameTextLeft5:GetText()
     end
 
-    if spellId == XerrPrio.spells.swp.id then
-        tooltipDescription = XerrUtils:replace(tooltipDescription, ',', '')
-        _, _, totalDmg, tickTime = string.find(tooltipDescription, "(%S+) Shadow damage over (%S+)")
+    tooltipDescription = XerrUtils:replace(tooltipDescription, ',', '')
+
+    if id == XerrPrio.spells.swp.id then
+        _, _, totalDmg, tickTime = strfind(tooltipDescription, "(%S+) Shadow damage over (%S+)")
     end
-    if spellId == XerrPrio.spells.vt.id then
-        tooltipDescription = XerrUtils:replace(tooltipDescription, ',', '')
-        _, _, totalDmg, tickTime = string.find(tooltipDescription, "Causes (%S+) Shadow damage over (%S+)")
+    if id == XerrPrio.spells.vt.id then
+        _, _, totalDmg, tickTime = strfind(tooltipDescription, "Causes (%S+) Shadow damage over (%S+)")
     end
 
     dps = tonumber(totalDmg) / tonumber(tickTime)
@@ -778,10 +787,8 @@ function SlashCmdList.XERRPRIO(arg)
 
             if XerrPrioDB.prio then
                 print('XerrPrio Prio Icons ON')
-                XerrPrio:Show()
             else
                 print('XerrPrio Prio Icons OFF')
-                XerrPrio:Hide()
             end
             return
         end
@@ -807,7 +814,7 @@ function SlashCmdList.XERRPRIO(arg)
     end
 
     print('XerrPrio available options:')
-    print('dots: ' .. (XerrPrioDB.bars and 'on' or 'off'))
+    print('dots: ' .. (XerrPrioDB.dots and 'on' or 'off'))
     print('prio: ' .. (XerrPrioDB.prio and 'on' or 'off'))
     print('config: ' .. (XerrPrioDB.config and 'on' or 'off'))
 

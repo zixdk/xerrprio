@@ -107,16 +107,14 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
             end
             if not UnitExists('target') then
                 XerrUtils.paused = true
-                XERR_PRIO_Prio:Hide()
                 return
             else
                 if UnitReaction('player', 'target') and UnitReaction('player', 'target') >= 5 then
                     XerrUtils.paused = true
-                    XERR_PRIO_Prio:Hide()
                     return
                 else
                     XerrUtils.paused = false
-                    XERR_PRIO_Prio:Show()
+                    return
                 end
             end
             return
@@ -492,7 +490,6 @@ function XerrUtils:UpdateConfigMode()
         XerrUtils.paused = false
         XERR_PRIO_Dots:Show()
         XERR_PRIO_Prio:Show()
-        print('XerrPrio Dots Config Mode On')
     else
 
         for _, spell in next, XerrDots.spells do
@@ -501,7 +498,6 @@ function XerrUtils:UpdateConfigMode()
 
         XERR_PRIO_Dots:Hide()
         XERR_PRIO_Prio:Hide()
-        print('XerrPrio Dots Config Mode Off')
     end
 end
 
@@ -582,7 +578,7 @@ function XerrPrio:GetNextSpell()
     end
 
     -- mindblast and dp after if we'll have 3 orbs after mindblast
-    if XerrUtils:GetSpellCooldown(self.spells.mb.id) == 0 then
+    if XerrUtils:GetSpellCooldown(self.spells.mb.id) <= XerrUtils:GetGCD() then
         tinsert(prio, self.spells.mb)
         if XerrUtils:GetShadowOrbs() == 2 then
             tinsert(prio, self.spells.dp)

@@ -445,7 +445,7 @@ function XerrUtils:GetWAIconColor(spell)
     local inRange = false
     local isNext = XerrPrio.nextSpell[1].id == spell.id
     local isNext2 = XerrPrio.nextSpell[2].id == spell.id
-    local icon = self.hp_path_icon .. 'center'
+    local icon = 'center'
 
     if spell.id == XerrPrio.spells.halo.id then
         inRange = false

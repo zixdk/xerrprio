@@ -18,22 +18,22 @@ XerrUtils.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
 XerrUtils.hp_path_icon = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Shadow_Icon\\';
 
 XerrDots = CreateFrame("Frame")
-
 XerrPrio = CreateFrame("Frame")
+
+XerrDotsScanner = CreateFrame("Frame")
 
 XerrDots.spells = {
     swp = {
         frame = nil,
         ord = 1,
-        name = '', id = 589, dps = 0,
-        color = { r = 255 / 255, g = 65 / 255, b = 9 / 255 }
+        name = '', id = 589, dps = 0, duration = 0, interval = 0,
+        color = { r = 255 / 255, g = 65 / 255, b = 9 / 255 }, ticks = {}
     },
     vt = {
         frame = nil,
         ord = 2,
-        name = '', id = 34914, dps = 0,
-        color = { r = 60 / 255, g = 52 / 255, b = 175 / 255
-        }
+        name = '', id = 34914, dps = 0, duration = 0, interval = 0,
+        color = { r = 60 / 255, g = 52 / 255, b = 175 / 255 }, ticks = {}
     },
     --dp = {
     --    frame = nil,
@@ -72,7 +72,6 @@ XerrUtils.cols = {
     lo3 = '|cffD69637'
 }
 
-
 XerrDots.dotStats = {}
 
 --------------------
@@ -99,7 +98,7 @@ XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, ar
             return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
-            if  XerrPrioDB.configMode then
+            if XerrPrioDB.configMode then
                 XERR_PRIO_Dots:Show()
                 XERR_PRIO_Prio:Show()
                 XerrUtils.paused = false
@@ -140,7 +139,7 @@ function XerrUtils:Init()
     self:PopulateSpellBookID()
 
     for key, spell in next, XerrDots.spells do
-        spell.name, spell.icon = XerrUtils:GetSpellInfo(spell.id)
+        spell.name, spell.icon = self:GetSpellInfo(spell.id)
 
         local frameName = 'XERRPRIODots_' .. key
 
@@ -158,7 +157,7 @@ function XerrUtils:Init()
     end
 
     for _, spell in next, XerrPrio.spells do
-        spell.name, spell.icon = XerrUtils:GetSpellInfo(spell.id)
+        spell.name, spell.icon = self:GetSpellInfo(spell.id)
     end
     XerrPrio.spells.swd.lastCastTime = GetTime()
 
@@ -178,7 +177,7 @@ function XerrUtils:Init()
 
     XerrPrio:Show()
 
-    XerrUtils:UpdateConfigMode()
+    self:UpdateConfigMode()
 
     self.init = true
 end
@@ -186,6 +185,55 @@ end
 --------------------
 ---  Timers
 --------------------
+
+--------------------
+--- Debuff Tooltip Scanner
+--------------------
+
+XerrDotsScanner:Hide()
+XerrDotsScanner.start = GetTime()
+XerrDotsScanner.spellId = 0
+
+XerrDotsScanner:SetScript("OnShow", function()
+    XerrDotsScanner.start = GetTime()
+end)
+XerrDotsScanner:SetScript("OnHide", function()
+    XerrDotsScanner.start = GetTime()
+end)
+
+XerrDotsScanner:SetScript("OnUpdate", function()
+    local plus = 0.2
+    local gt = GetTime() * 1000
+    local st = (XerrDotsScanner.start + plus) * 1000
+    if gt >= st then
+
+        XerrDotsScanner:Hide()
+
+        for i = 1, 40 do
+            local _, _, _, _, _, duration, _, unitCaster, _, _, spellId = UnitDebuff('target', i)
+            if spellId == XerrDotsScanner.spellId and unitCaster == "player" then
+                XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")
+                XerrPrioTooltipFrame:SetUnitDebuff("target", i)
+
+                local tooltipDescription = XerrPrioTooltipFrameTextLeft2:GetText()
+
+                local _, _, interval = strfind(tooltipDescription, "every (%S+) sec")
+
+                if spellId == XerrDots.spells.swp.id then
+                    XerrDots.spells.swp.duration = duration
+                    XerrDots.spells.swp.interval = interval
+                end
+                if spellId == XerrDots.spells.vt.id then
+                    XerrDots.spells.vt.duration = duration
+                    XerrDots.spells.vt.interval = interval
+                end
+
+                break
+            end
+        end
+
+    end
+end)
 
 --------------------
 --- Dots
@@ -216,6 +264,7 @@ XerrDots:SetScript("OnUpdate", function()
         end
 
         if XerrUtils.paused or not XerrPrioDB.dots then
+            XERR_PRIO_Dots:Hide()
             return
         end
 
@@ -233,7 +282,7 @@ XerrDots:SetScript("OnUpdate", function()
 
                 if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
 
-                    local current_dps = XerrUtils:GetSpellDamage(spell.id)
+                    local current_dps, current_damage = XerrUtils:GetSpellDamage(spell.id)
 
                     if current_dps > XerrDots.dotStats[guid][key].dps then
                         _G[frame .. 'Refresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrDots.dotStats[guid][key].dps) .. 'x')
@@ -271,6 +320,20 @@ XerrDots:SetScript("OnUpdate", function()
                 _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
                 _G[frame .. 'TimeLeft']:SetText(math.floor(tl))
                 _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
+
+                for i = 1, #spell.ticks do
+                    spell.ticks[i]:Hide()
+                end
+                local ticks = math.floor(spell.duration / spell.interval)
+                if ticks > 0 then
+                    for i = 1, ticks do
+                        if not spell.ticks[i] then
+                            spell.ticks[i] = CreateFrame("Frame", "XerrPRIODotsTicks_" .. i, _G[frame], "XerrDotsTickTemplate")
+                        end
+                        spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", 280 * i * spell.interval / spell.duration, 0)
+                        spell.ticks[i]:Show()
+                    end
+                end
 
                 _G[frame]:Show()
             else
@@ -358,14 +421,18 @@ function XerrUtils:SpellCast(id)
                 XerrDots.dotStats[guid][key] = {
                     tof = false,
                     uvls = false,
-                    dps = 0
+                    dps = 0,
+                    damage = 0
                 }
             end
 
             XerrDots.dotStats[guid][key].tof = self:PlayerHasTwistOfFate()
             XerrDots.dotStats[guid][key].uvls = self:PlayerHasUVLS()
 
-            XerrDots.dotStats[guid][key].dps = self:GetSpellDamage(spell.id)
+            XerrDots.dotStats[guid][key].dps, XerrDots.dotStats[guid][key].damage = self:GetSpellDamage(spell.id)
+
+            XerrDotsScanner.spellId = id
+            XerrDotsScanner:Show()
 
             return
         end
@@ -487,7 +554,7 @@ function XerrUtils:UpdateConfigMode()
             spell.frame:Show()
         end
 
-        XerrUtils.paused = false
+        self.paused = false
         XERR_PRIO_Dots:Show()
         XERR_PRIO_Prio:Show()
     else
@@ -536,6 +603,10 @@ function XerrPrio:GetNextSpell()
         end
     end
 
+    if tablesize(prio) == 2 then
+        return prio
+    end
+
     -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
     if XerrUtils:GetSpellCooldown(self.spells.mb.id) > 1.5 and XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
 
@@ -569,12 +640,13 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
-    --F	6.82	shadow_word_death,if=buff.shadow_word_death_reset_cooldown.stack=1
-    --todo
-
-    -- devouring plague
+    -- devouring plague if 3 orbs
     if XerrUtils:GetShadowOrbs() == 3 then
         tinsert(prio, self.spells.dp)
+    end
+
+    if tablesize(prio) == 2 then
+        return prio
     end
 
     -- mindblast and dp after if we'll have 3 orbs after mindblast
@@ -584,10 +656,6 @@ function XerrPrio:GetNextSpell()
             tinsert(prio, self.spells.dp)
         end
     end
-
-    --I	6.97	shadow_word_death,if=buff.shadow_word_death_reset_cooldown.stack=0
-    --todo
-
 
     if tablesize(prio) == 2 then
         return prio
@@ -682,7 +750,7 @@ end
 function XerrUtils:TimeSinceLastSWD()
     local t = GetTime() - XerrPrio.spells.swd.lastCastTime
     local icd = 8 - t
-    if icd > 0 and self:GetSpellCooldown(XerrPrio.spells.swd.id) == 0  then
+    if icd > 0 and self:GetSpellCooldown(XerrPrio.spells.swd.id) == 0 then
         return 'i' .. sformat(icd > 2 and "%d" or "%.1f", icd)
     else
         local cd = self:GetSpellCooldown(XerrPrio.spells.swd.id)
@@ -748,11 +816,11 @@ function XerrUtils:GetSpellDamage(id)
     local tooltipDescription = XerrPrioTooltipFrameTextLeft4:GetText();
     local totalDmg, tickTime, dps = 0, 0, 0
 
-    if strfind(tooltipDescription,"Cooldown remaining") then
+    if strfind(tooltipDescription, "Cooldown remaining") then
         tooltipDescription = XerrPrioTooltipFrameTextLeft5:GetText()
     end
 
-    tooltipDescription = XerrUtils:replace(tooltipDescription, ',', '')
+    tooltipDescription = self:replace(tooltipDescription, ',', '')
 
     if id == XerrPrio.spells.swp.id then
         _, _, totalDmg, tickTime = strfind(tooltipDescription, "(%S+) Shadow damage over (%S+)")
@@ -766,9 +834,6 @@ function XerrUtils:GetSpellDamage(id)
     return dps, totalDmg, tickTime
 
 end
-
-
-
 
 --------------------
 --- Slashcommands

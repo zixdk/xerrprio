@@ -4,6 +4,26 @@
 
     <GameTooltip name="XerrPrioTooltipFrame" frameStrata="TOOLTIP" hidden="true" parent="UIParent" inherits="GameTooltipTemplate"/>
 
+    <Frame name="XerrDotsTickTemplate" virtual="true" alpha="0.1">
+        <Size>
+            <AbsDimension x="1" y="24"/>
+        </Size>
+        <Layers>
+            <Layer level="BORDER">
+                <Texture file="Interface\Addons\xerrprio\Melli">
+                    <Size x="1" y="24"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="0" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+    </Frame>
+
     <Frame name="XerrPrioFrameTemplate" virtual="true" alpha="0.9">
         <Size>
             <AbsDimension x="280" y="24"/>

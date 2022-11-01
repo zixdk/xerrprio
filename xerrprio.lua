@@ -6,53 +6,70 @@ local _, class = UnitClass('player')
 -- known issues
 -- if target is friendly and turns hostile, the pause doesnt go to false
 
+xerrprio = LibStub("AceAddon-3.0"):NewAddon("xerrprio", "AceConsole-3.0", "AceEvent-3.0")
+local xerrprio = xerrprio
+
 --------------------
 --- Inits
 --------------------
 
-XerrUtils = CreateFrame("Frame")
-XerrUtils.init = false
-XerrUtils.paused = true
-XerrUtils.spellBookSpells = {}
-XerrUtils.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
-XerrUtils.hp_path_icon = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Shadow_Icon\\';
-
-XerrDots = CreateFrame("Frame")
 XerrPrio = CreateFrame("Frame")
+XerrPrio.Worker = CreateFrame("Frame")
 
-XerrDotsScanner = CreateFrame("Frame")
+XerrPrio.init = false
+XerrPrio.paused = true
+XerrPrio.spellBookSpells = {}
+XerrPrio.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
+XerrPrio.hp_path_icon = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Shadow_Icon\\';
 
-XerrDots.spells = {
-    swp = {
-        frame = nil,
-        ord = 1,
-        name = '', id = 589, dps = 0, duration = 0, interval = 0,
-        color = { r = 255 / 255, g = 65 / 255, b = 9 / 255 }, ticks = {}
-    },
-    vt = {
-        frame = nil,
-        ord = 2,
-        name = '', id = 34914, dps = 0, duration = 0, interval = 0,
-        color = { r = 60 / 255, g = 52 / 255, b = 175 / 255 }, ticks = {}
-    },
-    --dp = {
-    --    frame = nil,
-    --    ord = 3,
-    --    name = '', id = 2944,
-    --    color = { r = 113 / 255, g = 32 / 255, b = 97 / 255
-    --    }
-    --}
+XerrPrio.bars = {
+    spells = {
+        swp = {
+            frame = nil,
+            ord = 1,
+            name = '', id = 589, dps = 0, duration = 0, interval = 0,
+            ticks = {}
+        },
+        vt = {
+            frame = nil,
+            ord = 2,
+            name = '', id = 34914, dps = 0, duration = 0, interval = 0,
+            ticks = {}
+        }
+    }
+}
+XerrPrio.icons = {
+    spells = {
+        swp = { name = '', id = 589, icon = '', spellBookID = 0 },
+        vt = { name = '', id = 34914, icon = '', spellBookID = 0 },
+        dp = { name = '', id = 2944, icon = '', spellBookID = 0 },
+        mf = { name = '', id = 15407, icon = '', spellBookID = 0 },
+        mb = { name = '', id = 8092, icon = '', spellBookID = 0 },
+        halo = { name = '', id = 120644, icon = '', spellBookID = 0 },
+        shadowfiend = { name = '', id = 34433, icon = '', spellBookID = 0 },
+        swd = { name = '', id = 32379, icon = '', lastCastTime = 0, spellBookID = 0 }
+    }
 }
 
-XerrPrio.spells = {
-    swp = { name = '', id = 589, icon = '', spellBookID = 0 },
-    vt = { name = '', id = 34914, icon = '', spellBookID = 0 },
-    dp = { name = '', id = 2944, icon = '', spellBookID = 0 },
-    mf = { name = '', id = 15407, icon = '', spellBookID = 0 },
-    mb = { name = '', id = 8092, icon = '', spellBookID = 0 },
-    halo = { name = '', id = 120644, icon = '', spellBookID = 0 },
-    shadowfiend = { name = '', id = 34433, icon = '', spellBookID = 0 },
-    swd = { name = '', id = 32379, icon = '', lastCastTime = 0, spellBookID = 0 },
+XerrPrio.buffs = {
+    spells = {
+        meta = {
+            id = 137590, duration = 0
+        },
+        lightweave = {
+            id = 125487, duration = 0
+        },
+        jade = {
+            id = 104993, duration = 0
+        },
+        volatile = {
+            id = 138703, duration = 0
+        },
+        hydra = {
+            id = 138898, duration = 0
+        }
+        --todo add hero
+    }
 }
 
 XerrPrio.nextSpell = {
@@ -60,8 +77,10 @@ XerrPrio.nextSpell = {
     [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
 }
 
-XerrUtils.cols = {
-    white = '|cffffffff',
+XerrPrio.lowestProcTime = 0
+
+XerrPrio.colors = {
+    whiteHex = '|cffffffff',
 
     hi1 = '|cffD69637',
     hi2 = '|cffC8d637',
@@ -69,50 +88,61 @@ XerrUtils.cols = {
 
     lo1 = '|cff37d63e',
     lo2 = '|cffC8d637',
-    lo3 = '|cffD69637'
+    lo3 = '|cffD69637',
+
+    white = { r = 1, g = 1, b = 1, a = 1 },
+    swpDefault = { r = 255 / 255, g = 65 / 255, b = 9 / 255, a = 1 },
+    vtDefault = { r = 60 / 255, g = 52 / 255, b = 175 / 255, a = 1 }
 }
 
-XerrDots.dotStats = {}
+XerrPrio.dotStats = {}
+
+XerrPrio.twistOfFateId = 123254
+XerrPrio.uvlsId = 138963
 
 --------------------
 --- Events
 --------------------
 
-XerrUtils:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-XerrUtils:RegisterEvent('ADDON_LOADED')
-XerrUtils:RegisterEvent('PLAYER_ENTERING_WORLD')
-XerrUtils:RegisterEvent('PLAYER_TARGET_CHANGED')
-XerrUtils:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
-XerrUtils:RegisterEvent('PLAYER_TALENT_UPDATE')
-XerrUtils:SetScript("OnEvent", function(frame, event, arg1, arg2, arg3, arg4, arg5)
+XerrPrio:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+XerrPrio:RegisterEvent('ADDON_LOADED')
+XerrPrio:RegisterEvent('PLAYER_ENTERING_WORLD')
+XerrPrio:RegisterEvent('PLAYER_TARGET_CHANGED')
+XerrPrio:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+XerrPrio:RegisterEvent('PLAYER_TALENT_UPDATE')
+XerrPrio:RegisterEvent('VARIABLES_LOADED')
+XerrPrio:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
     if event then
         if (event == 'ADDON_LOADED' and arg1 == 'xerrprio') or event == 'PLAYER_ENTERING_WORLD' or event == 'PLAYER_TALENT_UPDATE' then
-            XerrUtils:Init()
+            self:Init()
             return
         end
-        if not XerrUtils.init then
+        if event == 'VARIABLES_LOADED' then
+            self:VarsLoaded()
+        end
+        if not self.init then
             return false
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
-            XerrUtils:SpellCast(arg5)
+            self:SpellCast(arg5)
             return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
             if XerrPrioDB.configMode then
-                XERR_PRIO_Dots:Show()
-                XERR_PRIO_Prio:Show()
-                XerrUtils.paused = false
+                XerrPrioBars:Show()
+                XerrPrioIcons:Show()
+                self.paused = false
                 return
             end
             if not UnitExists('target') then
-                XerrUtils.paused = true
+                self.paused = true
                 return
             else
                 if UnitReaction('player', 'target') and UnitReaction('player', 'target') >= 5 then
-                    XerrUtils.paused = true
+                    self.paused = true
                     return
                 else
-                    XerrUtils.paused = false
+                    self.paused = false
                     return
                 end
             end
@@ -126,60 +156,77 @@ end)
 ---  Init
 --------------------
 
-function XerrUtils:Init()
+function XerrPrio:Init()
 
     self.init = false
 
     if class ~= 'PRIEST' or GetSpecialization() ~= 3 then
-        XERR_PRIO_Dots:Hide()
-        XERR_PRIO_Prio:Hide()
+        XerrPrioBars:Hide()
+        XerrPrioIcons:Hide()
         return false
     end
 
-    self:PopulateSpellBookID()
-
-    for key, spell in next, XerrDots.spells do
+    for key, spell in next, self.bars.spells do
         spell.name, spell.icon = self:GetSpellInfo(spell.id)
 
-        local frameName = 'XERRPRIODots_' .. key
+        local frameName = 'XerrPrioBar_' .. key
 
         if not spell.frame then
-            spell.frame = CreateFrame('Frame', frameName, XERR_PRIO_Dots, 'XerrPrioFrameTemplate')
+            spell.frame = CreateFrame('Frame', frameName, XerrPrioBars, 'XerrPrioBarFrameTemplate')
         end
 
-        _G[frameName]:SetPoint("TOPLEFT", XERR_PRIO_Dots, "TOPLEFT", 0, -50 + spell.ord * 25)
-
-        _G[frameName .. 'Icon']:SetTexture(spell.icon)
-        _G[frameName .. 'Duration']:SetVertexColor(spell.color.r, spell.color.g, spell.color.b)
+        _G[frameName]:SetPoint("TOPLEFT", XerrPrioBars, "TOPLEFT", 0, -50 + spell.ord * 25)
         _G[frameName .. 'Name']:SetText(spell.name)
-        _G[frameName .. 'Name']:SetTextColor(1, 1, 1)
 
     end
 
-    for _, spell in next, XerrPrio.spells do
+    XerrPrioDB = {
+        configMode = false,
+        bars = false,
+        icons = false,
+        swp = {
+            enable = true,
+            barColor = { r = 1, g = 1, b = 1, a = 1 },
+            textColor = { r = 1, g = 1, b = 1, a = 1 },
+            showIcon = true,
+            showTicks = true,
+            showOnlyLastTick = true,
+            refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
+            refreshBarColor = { r = 1, g = 1, b = 1, a = 1 }
+        },
+        vt = {
+            enable = true,
+            barColor = { r = 1, g = 1, b = 1, a = 1 },
+            textColor = { r = 1, g = 1, b = 1, a = 1 },
+            showIcon = true,
+            showTicks = true,
+            showOnlyLastTick = true,
+            refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
+            refreshBarColor = { r = 1, g = 1, b = 1, a = 1 }
+        },
+        barWidth = 280,
+        barHeight = 24,
+        refreshMinDuration = 5,
+        minDotDpsIncrease = 1
+    }
+
+    self:UpdateConfig()
+    self:PopulateSpellBookID()
+
+    for _, spell in next, self.icons.spells do
         spell.name, spell.icon = self:GetSpellInfo(spell.id)
     end
-    XerrPrio.spells.swd.lastCastTime = GetTime()
-
-    if not XerrPrioDB then
-        XerrPrioDB = {
-            dots = false,
-            prio = false,
-            configMode = false
-        }
-    end
-
-    if XerrPrioDB.dots then
-        XerrDots:Show()
-    else
-        XerrDots:Hide()
-    end
-
-    XerrPrio:Show()
-
-    self:UpdateConfigMode()
+    self.icons.spells.swd.lastCastTime = GetTime()
 
     self.init = true
+
+    XerrPrio.Worker:Show()
+
+end
+
+function XerrPrio:VarsLoaded()
+    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable("xerrprio", self:CreateOptions())
+    LibStub("AceConfigDialog-3.0"):AddToBlizOptions("xerrprio", "xerrprio")
 end
 
 --------------------
@@ -187,238 +234,211 @@ end
 --------------------
 
 --------------------
---- Debuff Tooltip Scanner
+--- Worker
 --------------------
 
-XerrDotsScanner:Hide()
-XerrDotsScanner.start = GetTime()
-XerrDotsScanner.spellId = 0
+XerrPrio.Worker:Hide()
+XerrPrio.Worker.start = GetTime()
+XerrPrio.Worker.dotScanner = {
+    spellId = 0,
+    enabled = false
+}
+XerrPrio.Worker.bars = {
+    enabled = true,
+    show = false
+}
+XerrPrio.Worker.icons = {
+    enabled = true
+}
 
-XerrDotsScanner:SetScript("OnShow", function()
-    XerrDotsScanner.start = GetTime()
+XerrPrio.Worker:SetScript("OnShow", function(self)
+    self.start = GetTime()
+    self.timeSinceLastUpdate = 0;
 end)
-XerrDotsScanner:SetScript("OnHide", function()
-    XerrDotsScanner.start = GetTime()
-end)
 
-XerrDotsScanner:SetScript("OnUpdate", function()
-    local plus = 0.2
-    local gt = GetTime() * 1000
-    local st = (XerrDotsScanner.start + plus) * 1000
-    if gt >= st then
+XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
-        XerrDotsScanner:Hide()
+    self.timeSinceLastUpdate = self.timeSinceLastUpdate + elapsed;
 
-        for i = 1, 40 do
-            local _, _, _, _, _, duration, _, unitCaster, _, _, spellId = UnitDebuff('target', i)
-            if spellId == XerrDotsScanner.spellId and unitCaster == "player" then
-                XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")
-                XerrPrioTooltipFrame:SetUnitDebuff("target", i)
+    if self.timeSinceLastUpdate >= 0.05 then
+        self.timeSinceLastUpdate = 0;
 
-                local tooltipDescription = XerrPrioTooltipFrameTextLeft2:GetText()
+        self.dotScanner.enabled = not XerrPrio.paused
+        self.bars.enabled = not XerrPrio.paused
 
-                local _, _, interval = strfind(tooltipDescription, "every (%S+) sec")
+        -- Dots Scanner
+        -- Scans debuffs for dot duration and interval
 
-                if spellId == XerrDots.spells.swp.id then
-                    XerrDots.spells.swp.duration = duration
-                    XerrDots.spells.swp.interval = interval
+        if self.dotScanner.enabled then
+
+            for i = 1, 40 do
+                local _, _, _, _, _, duration, _, unitCaster, _, _, spellId = UnitDebuff('target', i)
+                if spellId == self.dotScanner.spellId and unitCaster == "player" then
+                    XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")
+                    XerrPrioTooltipFrame:SetUnitDebuff("target", i)
+
+                    local tooltipDescription = XerrPrioTooltipFrameTextLeft2:GetText()
+
+                    local _, _, interval = strfind(tooltipDescription, "every (%S+) sec")
+
+                    if spellId == XerrPrio.icons.spells.swp.id then
+                        XerrPrio.bars.spells.swp.duration = duration
+                        XerrPrio.bars.spells.swp.interval = interval
+                        self.dotScanner.enabled = false
+                    end
+                    if spellId == XerrPrio.icons.spells.vt.id then
+                        XerrPrio.bars.spells.vt.duration = duration
+                        XerrPrio.bars.spells.vt.interval = interval
+                        self.dotScanner.enabled = false
+                    end
+
+                    break
                 end
-                if spellId == XerrDots.spells.vt.id then
-                    XerrDots.spells.vt.duration = duration
-                    XerrDots.spells.vt.interval = interval
-                end
-
-                break
             end
         end
 
-    end
-end)
+        -- Bars
+        if self.bars.enabled then
 
---------------------
---- Dots
---------------------
+            for key, spell in next, XerrPrio.bars.spells do
+                local tl, perc, duration = XerrPrio:GetDebuffInfo(spell.id)
+                local frame = spell.frame:GetName()
+                if tl > 0 then
 
-XerrDots:Hide()
-XerrDots.start = GetTime()
+                    self.show = true
 
-XerrDots:SetScript("OnShow", function()
-    XERR_PRIO_Dots:Show()
-    XerrDots.start = GetTime()
-end)
-XerrDots:SetScript("OnHide", function()
-    XERR_PRIO_Dots:Hide()
-    XerrDots.start = GetTime()
-end)
+                    local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.twistOfFateId), XerrPrio:PlayerHasProc(XerrPrio.uvlsId)
+                    local guid = UnitGUID('target')
 
-XerrDots:SetScript("OnUpdate", function()
-    local plus = 0.05
-    local gt = GetTime() * 1000
-    local st = (XerrDots.start + plus) * 1000
-    if gt >= st then
+                    if XerrPrio.dotStats[guid] and XerrPrio.dotStats[guid][key] then
 
-        XerrDots.start = GetTime()
+                        local current_dps, current_damage = XerrPrio:GetSpellDamage(spell.id)
 
-        if XerrPrioDB.configMode then
-            return
-        end
+                        XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
-        if XerrUtils.paused or not XerrPrioDB.dots then
-            XERR_PRIO_Dots:Hide()
-            return
-        end
+                        if current_dps >= XerrPrio.dotStats[guid][key].dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
+                            _G[frame .. 'Refresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
 
-        local oneDot = false
+                            if XerrPrio.lowestProcTime ~= 0 then
 
-        for key, spell in next, XerrDots.spells do
-            local tl, perc = XerrUtils:GetDebuffInfo(spell.id)
-            local frame = spell.frame:GetName()
-            if tl > 0 then
+                                if XerrPrio.lowestProcTime > 5 then
+                                    _G[frame .. 'RefreshDuration']:SetVertexColor(_G[frame .. 'Duration']:GetVertexColor())
+                                else
+                                    --_G[frame .. 'Refresh']:SetText('Refresh fast ' .. string.format("%.2f", XerrProcs.lowestProcTime) .. 's')
+                                    _G[frame .. 'RefreshDuration']:SetVertexColor(0.2, 1, 0.2)
+                                end
 
-                oneDot = true
+                                _G[frame .. 'RefreshDuration']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
+                                _G[frame .. 'RefreshDurationSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshDuration']:GetWidth() - 8, 0)
+                                _G[frame .. 'RefreshDurationSpark']:Show()
+                                _G[frame .. 'RefreshDuration']:Show()
 
-                local tof, uvls = XerrUtils:PlayerHasTwistOfFate(), XerrUtils:PlayerHasUVLS()
-                local guid = UnitGUID('target')
+                            end
 
-                if XerrDots.dotStats[guid] and XerrDots.dotStats[guid][key] then
+                        else
+                            _G[frame .. 'Refresh']:SetText(sformat('%.1f', tl))
+                            _G[frame .. 'RefreshDurationSpark']:Hide()
+                            _G[frame .. 'RefreshDuration']:Hide()
+                        end
 
-                    local current_dps, current_damage = XerrUtils:GetSpellDamage(spell.id)
-
-                    if current_dps > XerrDots.dotStats[guid][key].dps then
-                        _G[frame .. 'Refresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrDots.dotStats[guid][key].dps) .. 'x')
-                    else
-                        _G[frame .. 'Refresh']:SetText('=')
-                    end
-
-                    if tof then
-                        _G[frame .. 'ToF']:SetText('ToF')
-                        _G[frame .. 'ToF']:SetTextColor(XerrDots.dotStats[guid][key].tof and 0 or 1, XerrDots.dotStats[guid][key].tof and 1 or 0, 0)
-                    else
-                        if XerrDots.dotStats[guid][key].tof then
+                        if tof then
                             _G[frame .. 'ToF']:SetText('ToF')
-                            _G[frame .. 'ToF']:SetTextColor(0, 1, 0)
+                            _G[frame .. 'ToF']:SetTextColor(XerrPrio.dotStats[guid][key].tof and 0 or 1, XerrPrio.dotStats[guid][key].tof and 1 or 0, 0)
                         else
-                            _G[frame .. 'ToF']:SetText('')
+                            if XerrPrio.dotStats[guid][key].tof then
+                                _G[frame .. 'ToF']:SetText('ToF')
+                                _G[frame .. 'ToF']:SetTextColor(0, 1, 0)
+                            else
+                                _G[frame .. 'ToF']:SetText('')
+                            end
                         end
-                    end
 
-                    if uvls then
-                        _G[frame .. 'UVLS']:SetText('UVLS')
-                        _G[frame .. 'UVLS']:SetTextColor(XerrDots.dotStats[guid][key].uvls and 0 or 1, XerrDots.dotStats[guid][key].uvls and 1 or 0, 0)
-                    else
-                        if XerrDots.dotStats[guid][key].uvls then
+                        if uvls then
                             _G[frame .. 'UVLS']:SetText('UVLS')
-                            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
+                            _G[frame .. 'UVLS']:SetTextColor(XerrPrio.dotStats[guid][key].uvls and 0 or 1, XerrPrio.dotStats[guid][key].uvls and 1 or 0, 0)
                         else
-                            _G[frame .. 'UVLS']:SetText('')
+                            if XerrPrio.dotStats[guid][key].uvls then
+                                _G[frame .. 'UVLS']:SetText('UVLS')
+                                _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
+                            else
+                                _G[frame .. 'UVLS']:SetText('')
+                            end
+                        end
+
+                    end
+
+                    _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * perc)
+                    --todo set height
+                    _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
+                    _G[frame .. 'TimeLeft']:SetText(math.floor(tl))
+                    _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
+
+                    for i = 1, #spell.ticks do
+                        spell.ticks[i]:Hide()
+                    end
+                    if XerrPrioDB.swp.showTicks then
+                        local ticks = math.floor(spell.duration / spell.interval)
+                        local numTicks = XerrPrioDB.swp.showOnlyLastTick and 1 or ticks
+                        if ticks > 0 then
+                            for i = 1, numTicks do
+                                if not spell.ticks[i] then
+                                    spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
+                                end
+                                spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * spell.interval / spell.duration, 0)
+                                spell.ticks[i]:Show()
+                            end
                         end
                     end
 
+                    _G[frame]:Show()
+                else
+                    _G[frame]:Hide()
                 end
-
-                _G[frame .. 'Duration']:SetWidth(280 * perc)
-                _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
-                _G[frame .. 'TimeLeft']:SetText(math.floor(tl))
-                _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
-
-                for i = 1, #spell.ticks do
-                    spell.ticks[i]:Hide()
-                end
-                local ticks = math.floor(spell.duration / spell.interval)
-                if ticks > 0 then
-                    for i = 1, ticks do
-                        if not spell.ticks[i] then
-                            spell.ticks[i] = CreateFrame("Frame", "XerrPRIODotsTicks_" .. i, _G[frame], "XerrDotsTickTemplate")
-                        end
-                        spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", 280 * i * spell.interval / spell.duration, 0)
-                        spell.ticks[i]:Show()
-                    end
-                end
-
-                _G[frame]:Show()
-            else
-                _G[frame]:Hide()
             end
-        end
 
-        if oneDot then
-            XERR_PRIO_Dots:Show()
+            if self.show then
+                XerrPrioBars:Show()
+            else
+                XerrPrioBars:Hide()
+            end
         else
-            XERR_PRIO_Dots:Hide()
+            XerrPrioBars:Hide()
         end
-    end
-end)
 
---------------------
---- Prio
---------------------
-
-XerrPrio:Hide()
-XerrPrio.start = GetTime()
-
-XerrPrio:SetScript("OnShow", function()
-    XERR_PRIO_Prio:Show()
-    XerrPrio.start = GetTime()
-end)
-XerrPrio:SetScript("OnHide", function()
-    XERR_PRIO_Prio:Hide()
-    XerrPrio.start = GetTime()
-end)
-
-XerrPrio:SetScript("OnUpdate", function()
-    local plus = 0.05
-    local gt = GetTime() * 1000
-    local st = (XerrPrio.start + plus) * 1000
-    if gt >= st then
-
-        XerrPrio.start = GetTime()
-
-        if XerrPrioDB.configMode or XerrUtils.paused then
+        -- Icons
+        if XerrPrioDB.configMode or XerrPrio.paused then
             XerrPrio.nextSpell = {
                 [1] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' },
                 [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
             }
-        end
-
-        if XerrUtils.paused or not XerrPrioDB.prio then
-            XERR_PRIO_Prio:Hide()
-        end
-
-        if not XerrUtils.paused and not XerrPrioDB.configMode then
+        else
             XerrPrio.nextSpell = XerrPrio:GetNextSpell()
-            XERR_PRIO_Prio:Show()
         end
-
-        if not XerrPrioDB.prio then
-            XERR_PRIO_Prio:Hide()
-        end
-
-        XERR_PRIO_PrioIcon:SetTexture(XerrPrio.nextSpell[1].icon)
-        XERR_PRIO_PrioIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
+        XerrPrioIconsIcon:SetTexture(XerrPrio.nextSpell[1].icon)
+        XerrPrioIconsIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
     end
+
 end)
 
 --------------------
 --- Helpers
 --------------------
 
-function XerrUtils:SpellCast(id)
+function XerrPrio:SpellCast(id)
 
-    if not XerrPrioDB.prio and not XerrPrioDB.dots then
-        return
-    end
+    -- todo add conditions here
 
     local guid = UnitGUID('target')
 
-    for key, spell in next, XerrDots.spells do
+    for key, spell in next, self.bars.spells do
         if id == spell.id then
 
-            if not XerrDots.dotStats[guid] then
-                XerrDots.dotStats[guid] = {}
+            if not self.dotStats[guid] then
+                self.dotStats[guid] = {}
             end
 
-            if not XerrDots.dotStats[guid][key] then
-                XerrDots.dotStats[guid][key] = {
+            if not self.dotStats[guid][key] then
+                self.dotStats[guid][key] = {
                     tof = false,
                     uvls = false,
                     dps = 0,
@@ -426,31 +446,54 @@ function XerrUtils:SpellCast(id)
                 }
             end
 
-            XerrDots.dotStats[guid][key].tof = self:PlayerHasTwistOfFate()
-            XerrDots.dotStats[guid][key].uvls = self:PlayerHasUVLS()
+            self.dotStats[guid][key].tof = self:PlayerHasProc(self.twistOfFateId)
+            self.dotStats[guid][key].uvls = self:PlayerHasProc(self.uvlsId)
 
-            XerrDots.dotStats[guid][key].dps, XerrDots.dotStats[guid][key].damage = self:GetSpellDamage(spell.id)
+            self.dotStats[guid][key].dps, XerrPrio.dotStats[guid][key].damage = self:GetSpellDamage(spell.id)
 
-            XerrDotsScanner.spellId = id
-            XerrDotsScanner:Show()
+            XerrPrio.Worker.dotScanner.spellId = id
+            XerrPrio.Worker.dotScanner.enabled = true
 
             return
         end
     end
 
-    if id == XerrPrio.spells.swd.id then
-        XerrPrio.spells.swd.lastCastTime = GetTime()
+    if id == self.icons.spells.swd.id then
+        self.icons.spells.swd.lastCastTime = GetTime()
     end
 end
 
-function XerrUtils:GetSpellInfo(id)
+function XerrPrio:GetSpellInfo(id)
     local name, _, icon, _, _, _, castTime = GetSpellInfo(id)
     return name, icon, castTime / 1000
 end
 
-function XerrUtils:GetDebuffInfo(id)
+function XerrPrio:GetLowestProcTime()
+
+    local lowestTime = 100
+
+    for i = 1, 40 do
+        for _, spell in next, self.buffs.spells do
+            local name, _, _, _, _, _, expirationTime, _, _, _, spellId = UnitBuff("player", i)
+            if name then
+                if spellId == spell.id then
+                    if expirationTime - GetTime() < lowestTime then
+                        lowestTime = expirationTime - GetTime()
+                    end
+                end
+            end
+        end
+    end
+
+    if lowestTime > 0 and lowestTime ~= 100 then
+        return lowestTime
+    end
+    return 0
+end
+
+function XerrPrio:GetDebuffInfo(id)
     if not UnitExists('target') then
-        return 0, 0
+        return 0, 0, 0
     end
     for i = 1, 40 do
         local _, _, _, _, _, duration, expirationTime, unitCaster, _, _, spellId = UnitDebuff('target', i)
@@ -458,45 +501,35 @@ function XerrUtils:GetDebuffInfo(id)
             if spellId == id then
                 local tl = expirationTime - GetTime()
                 local perc = tl / duration
-                return expirationTime - GetTime(), perc
+                return expirationTime - GetTime(), perc, duration
             end
         end
     end
-    return 0, 0
+    return 0, 0, 0
 end
 
-function XerrUtils:PlayerHasTwistOfFate()
+function XerrPrio:PlayerHasProc(procId)
     for i = 1, 40 do
         local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
-        if id == 123254 then
+        if id == procId then
             return true
         end
     end
     return false
 end
 
-function XerrUtils:PlayerHasUVLS()
-    for i = 1, 40 do
-        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
-        if id == 138963 then
-            return true
-        end
-    end
-    return false
-end
+function XerrPrio:GetWAIconColor(spell)
 
-function XerrUtils:GetWAIconColor(spell)
-
-    if not UnitExists('target') or XerrUtils.paused then
+    if not UnitExists('target') or self.paused then
         return 1, 1, 1, 1, false, false, false, self.hp_path_icon .. 'offcd'
     end
 
     local inRange = false
-    local isNext = XerrPrio.nextSpell[1].id == spell.id
-    local isNext2 = XerrPrio.nextSpell[2].id == spell.id
+    local isNext = self.nextSpell[1].id == spell.id
+    local isNext2 = self.nextSpell[2].id == spell.id
     local icon = 'center'
 
-    if spell.id == XerrPrio.spells.halo.id then
+    if spell.id == self.icons.spells.halo.id then
         inRange = false
         if HaloPro_MainFrame and HaloPro_MainFrame.texture:GetTexture() then
             local hpt = HaloPro_MainFrame.texture:GetTexture()
@@ -533,42 +566,7 @@ function XerrUtils:GetWAIconColor(spell)
     return 1, 0.2, 0.2, 1, isNext, isNext2, inRange, icon
 end
 
-
-
---N	13.99	shadow_word_pain,if=ticks_remain<=1
---O	15.98	vampiric_touch,max_cycle_targets=5,if=remains<cast_time+tick_time
---P	0.00	vampiric_embrace,if=shadow_orb=3&health.pct<=40
---Q	16.62	devouring_plague,if=shadow_orb=3
---V	0.64	wait,sec=cooldown.shadow_word_death.remains,if=target.health.pct<20&cooldown.shadow_word_death.remains<0.5
---W	10.73	wait,sec=cooldown.mind_blast.remains,if=cooldown.mind_blast.remains<0.5
---Z	123.92	mind_flay,chain=1,interrupt=1
---a	0.00	shadow_word_death,moving=1
---e	0.00	shadow_word_pain,moving=1
-
-
-function XerrUtils:UpdateConfigMode()
-
-    if XerrPrioDB.configMode then
-
-        for _, spell in next, XerrDots.spells do
-            spell.frame:Show()
-        end
-
-        self.paused = false
-        XERR_PRIO_Dots:Show()
-        XERR_PRIO_Prio:Show()
-    else
-
-        for _, spell in next, XerrDots.spells do
-            spell.frame:Hide()
-        end
-
-        XERR_PRIO_Dots:Hide()
-        XERR_PRIO_Prio:Hide()
-    end
-end
-
-function XerrUtils:PopulateSpellBookID()
+function XerrPrio:PopulateSpellBookID()
     self.spellBookSpells = {}
 
     local i = 1
@@ -583,7 +581,7 @@ function XerrUtils:PopulateSpellBookID()
         i = i + 1
     end
 
-    for _, spell in next, XerrPrio.spells do
+    for _, spell in next, self.icons.spells do
         spell.spellBookID = self.spellBookSpells[spell.name] or false
     end
 end
@@ -594,12 +592,12 @@ function XerrPrio:GetNextSpell()
 
     local guid = UnitGUID('target')
     -- refresh dots if uvls procd
-    if XerrUtils:PlayerHasUVLS() and XerrDots.dotStats[guid] then
-        if XerrDots.dotStats[guid].swp and not XerrDots.dotStats[guid].swp.uvls then
-            tinsert(prio, self.spells.swp)
+    if self:PlayerHasProc(self.uvlsId) and self.dotStats[guid] then
+        if self.dotStats[guid].swp and not self.dotStats[guid].swp.uvls then
+            tinsert(prio, self.icons.spells.swp)
         end
-        if XerrDots.dotStats[guid].vt and not XerrDots.dotStats[guid].vt.uvls then
-            tinsert(prio, self.spells.vt)
+        if self.dotStats[guid].vt and not self.dotStats[guid].vt.uvls then
+            tinsert(prio, self.icons.spells.vt)
         end
     end
 
@@ -608,17 +606,21 @@ function XerrPrio:GetNextSpell()
     end
 
     -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
-    if XerrUtils:GetSpellCooldown(self.spells.mb.id) > 1.5 and XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
+    if self:GetSpellCooldown(self.icons.spells.mb.id) > 1.5 and self:GetDebuffInfo(self.icons.spells.dp.id) == 0 then
 
-        if XerrDots.dotStats[guid] then
-            if XerrDots.dotStats[guid].swp then
-                if XerrUtils:GetSpellDamage(self.spells.swp.id) > XerrDots.dotStats[guid].swp.dps then
-                    tinsert(prio, self.spells.swp)
+        if self.dotStats[guid] then
+            if self.dotStats[guid].swp then
+                if self:GetSpellDamage(self.icons.spells.swp.id) >= self.dotStats[guid].swp.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
+                    if self.lowestProcTime > 0 and self.lowestProcTime <= XerrPrioDB.refreshMinDuration then
+                        tinsert(prio, self.icons.spells.swp)
+                    end
                 end
             end
-            if XerrDots.dotStats[guid].vt then
-                if XerrUtils:GetSpellDamage(self.spells.vt.id) > XerrDots.dotStats[guid].vt.dps then
-                    tinsert(prio, self.spells.vt)
+            if self.dotStats[guid].vt then
+                if self:GetSpellDamage(self.icons.spells.vt.id) >= self.dotStats[guid].vt.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
+                    if self.lowestProcTime > 0 and self.lowestProcTime <= self.refreshMinDuration then
+                        tinsert(prio, self.icons.spells.vt)
+                    end
                 end
             end
         end
@@ -630,9 +632,9 @@ function XerrPrio:GetNextSpell()
     end
 
     -- halo when offcooldown and no dp
-    if self.spells.halo.spellBookID and XerrUtils:GetSpellCooldown(self.spells.halo.id) == 0 then
-        if XerrUtils:GetDebuffInfo(self.spells.dp.id) == 0 then
-            tinsert(prio, self.spells.halo)
+    if self.icons.spells.halo.spellBookID and self:GetSpellCooldown(self.icons.spells.halo.id) == 0 then
+        if self:GetDebuffInfo(self.icons.spells.dp.id) == 0 then
+            tinsert(prio, self.icons.spells.halo)
         end
     end
 
@@ -641,8 +643,8 @@ function XerrPrio:GetNextSpell()
     end
 
     -- devouring plague if 3 orbs
-    if XerrUtils:GetShadowOrbs() == 3 then
-        tinsert(prio, self.spells.dp)
+    if self:GetShadowOrbs() == 3 then
+        tinsert(prio, self.icons.spells.dp)
     end
 
     if tablesize(prio) == 2 then
@@ -650,10 +652,10 @@ function XerrPrio:GetNextSpell()
     end
 
     -- mindblast and dp after if we'll have 3 orbs after mindblast
-    if XerrUtils:GetSpellCooldown(self.spells.mb.id) <= XerrUtils:GetGCD() then
-        tinsert(prio, self.spells.mb)
-        if XerrUtils:GetShadowOrbs() == 2 then
-            tinsert(prio, self.spells.dp)
+    if self:GetSpellCooldown(self.icons.spells.mb.id) <= self:GetGCD() then
+        tinsert(prio, self.icons.spells.mb)
+        if self:GetShadowOrbs() == 2 then
+            tinsert(prio, self.icons.spells.dp)
         end
     end
 
@@ -662,20 +664,20 @@ function XerrPrio:GetNextSpell()
     end
 
     -- shadow word: death
-    if XerrUtils:ExecutePhase() and XerrUtils:GetSpellCooldown(self.spells.swd.id) == 0 then
-        if XerrUtils:GetDebuffInfo(self.spells.dp.id) >= 0.2 then
-            if GetTime() - self.spells.swd.lastCastTime >= 8 then
-                tinsert(prio, self.spells.swd)
-            elseif XerrUtils:GetSpellCooldown(self.spells.mb.id) == 0 then
-                tinsert(prio, self.spells.mb)
-                if XerrUtils:GetShadowOrbs() == 2 then
-                    tinsert(prio, self.spells.dp)
+    if self:ExecutePhase() and self:GetSpellCooldown(self.icons.spells.swd.id) == 0 then
+        if self:GetDebuffInfo(self.icons.spells.dp.id) >= 0.2 then
+            if GetTime() - self.icons.spells.swd.lastCastTime >= 8 then
+                tinsert(prio, self.icons.spells.swd)
+            elseif self:GetSpellCooldown(self.icons.spells.mb.id) == 0 then
+                tinsert(prio, self.icons.spells.mb)
+                if self:GetShadowOrbs() == 2 then
+                    tinsert(prio, self.icons.spells.dp)
                 end
             else
-                tinsert(prio, self.spells.mf)
+                tinsert(prio, self.icons.spells.mf)
             end
         else
-            tinsert(prio, self.spells.swd)
+            tinsert(prio, self.icons.spells.swd)
         end
     end
 
@@ -684,8 +686,8 @@ function XerrPrio:GetNextSpell()
     end
 
     -- insanity
-    if XerrUtils:GetDebuffInfo(self.spells.dp.id) > 0 then
-        tinsert(prio, self.spells.mf)
+    if self:GetDebuffInfo(self.icons.spells.dp.id) > 0 then
+        tinsert(prio, self.icons.spells.mf)
     end
 
     if tablesize(prio) == 2 then
@@ -693,8 +695,8 @@ function XerrPrio:GetNextSpell()
     end
 
     -- shadowfiend
-    if XerrUtils:GetSpellCooldown(self.spells.shadowfiend.id) == 0 then
-        tinsert(prio, self.spells.shadowfiend)
+    if self:GetSpellCooldown(self.icons.spells.shadowfiend.id) == 0 then
+        tinsert(prio, self.icons.spells.shadowfiend)
     end
 
     if tablesize(prio) == 2 then
@@ -702,8 +704,8 @@ function XerrPrio:GetNextSpell()
     end
 
     -- swp
-    if XerrUtils:GetDebuffInfo(self.spells.swp.id) < 0.5 then
-        tinsert(prio, self.spells.swp)
+    if self:GetDebuffInfo(self.icons.spells.swp.id) < 0.5 then
+        tinsert(prio, self.icons.spells.swp)
     end
 
     if tablesize(prio) == 2 then
@@ -711,9 +713,9 @@ function XerrPrio:GetNextSpell()
     end
 
     -- vt
-    if XerrUtils:GetDebuffInfo(self.spells.vt.id) >= 0 then
-        if XerrUtils:GetDebuffInfo(self.spells.vt.id) < select(3, XerrUtils:GetSpellInfo(self.spells.vt.id)) then
-            tinsert(prio, self.spells.vt)
+    if self:GetDebuffInfo(self.icons.spells.vt.id) >= 0 then
+        if self:GetDebuffInfo(self.icons.spells.vt.id) < select(3, self:GetSpellInfo(self.icons.spells.vt.id)) then
+            tinsert(prio, self.icons.spells.vt)
         end
     end
 
@@ -722,38 +724,38 @@ function XerrPrio:GetNextSpell()
     end
 
     -- mind flay if nothing else is available
-    tinsert(prio, self.spells.mf)
+    tinsert(prio, self.icons.spells.mf)
 
     if tablesize(prio) == 2 then
         return prio
     end
 
     -- mind blast 2nd if cd <= 1s
-    if prio[1] and prio[1].id ~= self.spells.mb.id and XerrUtils:GetSpellCooldown(self.spells.mb.id) <= 1 then
-        if prio[2] and prio[2].id ~= self.spells.dp.id then
-            prio[2] = self.spells.mb
+    if prio[1] and prio[1].id ~= self.icons.spells.mb.id and self:GetSpellCooldown(self.icons.spells.mb.id) <= 1 then
+        if prio[2] and prio[2].id ~= self.icons.spells.dp.id then
+            prio[2] = self.icons.spells.mb
         end
     end
 
     -- if we dont have a 2nd spell by now add mb if cooldown shorter than halo cd
     -- else add mf
     if tablesize(prio) == 1 then
-        if XerrUtils:GetSpellCooldown(self.spells.mb.id) < XerrUtils:GetSpellCooldown(self.spells.halo.id) then
-            tinsert(prio, self.spells.mb)
+        if self:GetSpellCooldown(self.icons.spells.mb.id) < self:GetSpellCooldown(self.icons.spells.halo.id) then
+            tinsert(prio, self.icons.spells.mb)
         end
-        tinsert(prio, self.spells.mf)
+        tinsert(prio, self.icons.spells.mf)
     end
 
     return prio
 end
 
-function XerrUtils:TimeSinceLastSWD()
-    local t = GetTime() - XerrPrio.spells.swd.lastCastTime
+function XerrPrio:TimeSinceLastSWD()
+    local t = GetTime() - self.icons.spells.swd.lastCastTime
     local icd = 8 - t
-    if icd > 0 and self:GetSpellCooldown(XerrPrio.spells.swd.id) == 0 then
+    if icd > 0 and self:GetSpellCooldown(self.icons.spells.swd.id) == 0 then
         return 'i' .. sformat(icd > 2 and "%d" or "%.1f", icd)
     else
-        local cd = self:GetSpellCooldown(XerrPrio.spells.swd.id)
+        local cd = self:GetSpellCooldown(self.icons.spells.swd.id)
         if cd == 0 then
             return ''
         end
@@ -761,7 +763,7 @@ function XerrUtils:TimeSinceLastSWD()
     end
 end
 
-function XerrUtils:GetSpellCooldown(id)
+function XerrPrio:GetSpellCooldown(id)
     local start, duration, enabled = GetSpellCooldown(id);
     if enabled == 0 then
         return 0 --active, like pom
@@ -774,7 +776,7 @@ function XerrUtils:GetSpellCooldown(id)
     return 0
 end
 
-function XerrUtils:GetGCD()
+function XerrPrio:GetGCD()
     local start, duration = GetSpellCooldown(61304);
     if start > 0 and duration > 0 then
         return start + duration - GetTime()
@@ -782,18 +784,18 @@ function XerrUtils:GetGCD()
     return 0
 end
 
-function XerrUtils:GetShadowOrbs()
+function XerrPrio:GetShadowOrbs()
     return UnitPower("player", SPELL_POWER_SHADOW_ORBS)
 end
 
-function XerrUtils:ExecutePhase()
+function XerrPrio:ExecutePhase()
     if not UnitExists('target') then
         return false
     end
     return (UnitHealth('target') * 100) / UnitHealthMax('target') <= 20
 end
 
-function XerrUtils:replace(text, search, replace)
+function XerrPrio:replace(text, search, replace)
     if search == replace then
         return text
     end
@@ -809,7 +811,7 @@ function XerrUtils:replace(text, search, replace)
     return searchedtext
 end
 
-function XerrUtils:GetSpellDamage(id)
+function XerrPrio:GetSpellDamage(id)
 
     XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")
     XerrPrioTooltipFrame:SetSpellByID(id);
@@ -822,10 +824,10 @@ function XerrUtils:GetSpellDamage(id)
 
     tooltipDescription = self:replace(tooltipDescription, ',', '')
 
-    if id == XerrPrio.spells.swp.id then
+    if id == XerrPrio.icons.spells.swp.id then
         _, _, totalDmg, tickTime = strfind(tooltipDescription, "(%S+) Shadow damage over (%S+)")
     end
-    if id == XerrPrio.spells.vt.id then
+    if id == XerrPrio.icons.spells.vt.id then
         _, _, totalDmg, tickTime = strfind(tooltipDescription, "Causes (%S+) Shadow damage over (%S+)")
     end
 
@@ -845,32 +847,17 @@ function SlashCmdList.XERRPRIO(arg)
     if arg then
 
         if arg == 'prio' then
-            XerrPrioDB.prio = not XerrPrioDB.prio
-
-            if XerrPrioDB.prio then
-                print('XerrPrio Prio Icons ON')
-            else
-                print('XerrPrio Prio Icons OFF')
-            end
+            XerrPrio:SetOption(arg, not XerrPrioDB[arg])
             return
         end
 
         if arg == 'dots' then
-            XerrPrioDB.dots = not XerrPrioDB.dots
-
-            if XerrPrioDB.dots then
-                print('XerrPrio Dots ON')
-                XerrDots:Show()
-            else
-                print('XerrPrio Dots OFF')
-                XerrDots:Hide()
-            end
+            XerrPrio:SetOption(arg, not XerrPrioDB[arg])
             return
         end
 
         if arg == 'config' then
-            XerrPrioDB.configMode = not XerrPrioDB.configMode
-            XerrUtils:UpdateConfigMode()
+            XerrPrio:SetOption('configMode', not XerrPrioDB['configMode'])
             return
         end
     end
@@ -887,23 +874,598 @@ end
 --- Options
 --------------------
 
---function XerrUtils:CreateOptions()
---
---    local options = {
---        type = "group",
---        name = "XerrPrio",
---        args = {
---            newStyle = {
---                order = 2,
---                name = "Config mode",
---                desc = "Config mode desc",
---                type = "toggle",
---                width = "full",
---                set = function(info,val) XerrPrioDB.configMode = val end,
---                get = function(info) return XerrPrioDB.configMode end
---            }
---        }
---    }
---
---    return options
---end
+function XerrPrio:CreateOptions()
+
+    local options = {
+        type = "group",
+        name = "XerrPrio Options",
+        args = {
+            d = {
+                type = "description",
+                name = "Shadow priest helper",
+                order = 0,
+            },
+            configMode = {
+                order = 1,
+                name = "Config mode",
+                desc = "Config mode desc",
+                type = "toggle",
+                width = "full",
+                set = function(info, val)
+                    XerrPrioDB.configMode = val
+                    XerrPrio:UpdateConfig()
+                end,
+                get = function(info)
+                    return XerrPrioDB.configMode
+                end
+            },
+            general = {
+                type = "group",
+                name = "General",
+                order = 2,
+                args = {
+                    procTime = {
+                        order = 1,
+                        type = "range",
+                        name = "Dot refresh procs min duration",
+                        desc = "Refresh dots based on procs like trinkets, jade spirit.",
+                        min = 1,
+                        max = 10,
+                        step = 0.5,
+                        get = function()
+                            return XerrPrioDB.refreshMinDuration
+                        end,
+                        set = function(self, val)
+                            XerrPrioDB.refreshMinDuration = val
+                            XerrPrio:UpdateConfig()
+                        end,
+
+                    },
+                    minDotDps = {
+                        order = 1,
+                        type = "range",
+                        name = "Minimum dot dps increase (%)",
+                        desc = "for refresh",
+                        min = 1,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return XerrPrioDB.minDotDpsIncrease
+                        end,
+                        set = function(self, val)
+                            XerrPrioDB.minDotDpsIncrease = val
+                            XerrPrio:UpdateConfig()
+                        end,
+
+                    },
+                },
+            },
+            dotBars = {
+                type = "group",
+                name = "Dot Bars",
+                order = 3,
+                args = {
+                    dotBars = {
+                        order = 1,
+                        name = "Enable",
+                        desc = "Bars for SWP and VT",
+                        type = "toggle",
+                        width = "full",
+                        set = function(info, val)
+                            XerrPrioDB.dots = val
+                            XerrPrio:UpdateConfig()
+                        end,
+                        get = function(info)
+                            return XerrPrioDB.dots
+                        end
+                    },
+                    swp = {
+                        order = 2,
+                        type = "group",
+                        name = "Shadow Word: Pain",
+                        inline = true,
+                        args = {
+                            enable = {
+                                order = 1,
+                                name = "Enable",
+                                desc = "Enable SWP Bar",
+                                type = "toggle",
+                                width = "full",
+                                set = function(info, val)
+                                    XerrPrioDB.swp.enable = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.swp.enable
+                                end
+                            },
+                            icon = {
+                                order = 2,
+                                name = "Show Icon",
+                                desc = "Show SWP Icon",
+                                type = "toggle",
+                                width = "full",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.swp.showIcon = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.swp.showIcon
+                                end
+                            },
+                            textColor = {
+                                order = 3,
+                                name = "Text Color",
+                                desc = "Color of the SWP Text",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.swp.textColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.swp.textColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            barColor = {
+                                order = 4,
+                                name = "Bar Color",
+                                desc = "Color of the SWP Bar",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.swp.barColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.swp.barColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetTextColor = {
+                                order = 5,
+                                name = "Reset Text Color",
+                                desc = "Reset Text Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.swp.textColor = XerrPrio.colors.white
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetBarColor = {
+                                order = 6,
+                                name = "Reset Bar Color",
+                                desc = "Reset Bar Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.swp.barColor = XerrPrio.colors.swpDefault
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            ticks = {
+                                order = 7,
+                                name = "Show Ticks",
+                                desc = "Show DOT ticks",
+                                type = "toggle",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.swp.showTicks = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.swp.showTicks
+                                end
+                            },
+                            ticksOnlyLast = {
+                                order = 8,
+                                name = "Only last tick",
+                                desc = "Show only last tick",
+                                type = "toggle",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable and not XerrPrioDB.swp.showTicks
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.swp.showOnlyLastTick = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.swp.showOnlyLastTick
+                                end
+                            },
+                            refreshTextColor = {
+                                order = 9,
+                                name = "Refresh Text Color",
+                                desc = "Color of the SWP Refresh Text",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.swp.refreshTextColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.swp.refreshTextColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            refreshBarColor = {
+                                order = 10,
+                                name = "Refresh Bar Color",
+                                desc = "Color of the SWP Refresh Bar",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.swp.refreshBarColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.swp.refreshBarColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetRefreshTextColor = {
+                                order = 11,
+                                name = "Reset Refresh Text Color",
+                                desc = "Reset Refresh Text Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.swp.refreshTextColor = XerrPrio.colors.white
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetRefreshBarColor = {
+                                order = 12,
+                                name = "Reset Refresh Bar Color",
+                                desc = "Reset Refresh Bar Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.swp.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.swp.refreshBarColor = XerrPrio.colors.swpDefault
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                        }
+                    },
+                    vt = {
+                        order = 3,
+                        type = "group",
+                        name = "Vampiric Embrace",
+                        inline = true,
+                        args = {
+                            enable = {
+                                order = 1,
+                                name = "Enable",
+                                desc = "Enable VT Bar",
+                                type = "toggle",
+                                width = "full",
+                                set = function(info, val)
+                                    XerrPrioDB.vt.enable = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.vt.enable
+                                end
+                            },
+                            icon = {
+                                order = 2,
+                                name = "Show Icon",
+                                desc = "Show VT Icon",
+                                type = "toggle",
+                                width = "full",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.vt.showIcon = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.vt.showIcon
+                                end
+                            },
+                            textColor = {
+                                order = 3,
+                                name = "Text Color",
+                                desc = "Color of the VT Text",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.vt.textColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.vt.textColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            barColor = {
+                                order = 4,
+                                name = "Bar Color",
+                                desc = "Color of the VT Bar",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.vt.barColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.vt.barColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetTextColor = {
+                                order = 5,
+                                name = "Reset Text Color",
+                                desc = "Reset Text Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.vt.textColor = XerrPrio.colors.white
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetBarColor = {
+                                order = 6,
+                                name = "Reset Bar Color",
+                                desc = "Reset Bar Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.vt.barColor = XerrPrio.colors.vtDefault
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            ticks = {
+                                order = 7,
+                                name = "Show Ticks",
+                                desc = "Show DOT ticks",
+                                type = "toggle",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.vt.showTicks = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.vt.showTicks
+                                end
+                            },
+                            ticksOnlyLast = {
+                                order = 8,
+                                name = "Only last tick",
+                                desc = "Show only last tick",
+                                type = "toggle",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable and not XerrPrioDB.vt.showTicks
+                                end,
+                                set = function(info, val)
+                                    XerrPrioDB.vt.showOnlyLastTick = val
+                                    XerrPrio:UpdateConfig()
+                                end,
+                                get = function(info)
+                                    return XerrPrioDB.vt.showOnlyLastTick
+                                end
+                            },
+                            refreshTextColor = {
+                                order = 9,
+                                name = "Refresh Text Color",
+                                desc = "Color of the VT Refresh Text",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.vt.refreshTextColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.vt.refreshTextColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            refreshBarColor = {
+                                order = 10,
+                                name = "Refresh Bar Color",
+                                desc = "Color of the VT Refresh Bar",
+                                type = "color",
+                                hasAlpha = true,
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                get = function(info)
+                                    local c = XerrPrioDB.vt.refreshBarColor
+                                    return c.r, c.g, c.b, c.a
+                                end,
+                                set = function(info, r, g, b, a)
+                                    XerrPrioDB.vt.refreshBarColor = { r = r, g = g, b = b, a = a }
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetRefreshTextColor = {
+                                order = 11,
+                                name = "Reset Refresh Text Color",
+                                desc = "Reset Refresh Text Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.vt.refreshTextColor = XerrPrio.colors.white
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                            resetRefreshBarColor = {
+                                order = 12,
+                                name = "Reset Refresh Bar Color",
+                                desc = "Reset Refresh Bar Color to default value",
+                                type = "execute",
+                                disabled = function(info)
+                                    return not XerrPrioDB.vt.enable
+                                end,
+                                func = function()
+                                    XerrPrioDB.vt.refreshBarColor = XerrPrio.colors.vtDefault
+                                    XerrPrio:UpdateConfig()
+                                end,
+                            },
+                        }
+                    }
+                },
+            },
+            prioIcons = {
+                type = "group",
+                name = "Priority Icons",
+                order = 4,
+                args = {
+                    prioIcons = {
+                        order = 1,
+                        name = "Enable",
+                        desc = "Icons for next spell on priority list",
+                        type = "toggle",
+                        width = "full",
+                        set = function(info, val)
+                            XerrPrioDB.prio = val
+                            XerrPrio:UpdateConfig()
+                        end,
+                        get = function(info)
+                            return XerrPrioDB.prio
+                        end
+                    },
+                },
+            },
+        }
+    }
+
+    return options
+end
+
+function XerrPrio:UpdateConfig()
+
+    if XerrPrioDB.bars then
+        XerrPrioBars:Show()
+    else
+        XerrPrioBars:Hide()
+    end
+
+    if XerrPrioDB.configMode then
+        for key, spell in next, self.bars.spells do
+
+            local frame = spell.frame:GetName()
+
+            _G[frame .. 'RefreshDuration']:SetWidth(XerrPrioDB.barWidth * 0.25)
+            _G[frame .. 'RefreshDurationSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshDuration']:GetWidth() - 8, 0)
+            _G[frame .. 'RefreshDurationSpark']:Show()
+            _G[frame .. 'RefreshDuration']:Show()
+
+            _G[frame .. 'Refresh']:SetText(sformat('%.1f', 1.5))
+
+            _G[frame .. 'ToF']:SetText('ToF')
+            _G[frame .. 'ToF']:SetTextColor(0, 1, 0, 0)
+            _G[frame .. 'ToF']:Show()
+
+            _G[frame .. 'UVLS']:SetText('UVLS')
+            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0, 0)
+            _G[frame .. 'UVLS']:Show()
+
+            _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * 0.75)
+            _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
+            _G[frame .. 'TimeLeft']:SetText(9)
+            _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
+
+            for i = 1, #spell.ticks do
+                spell.ticks[i]:Hide()
+            end
+            if XerrPrioDB.swp.showTicks then
+                local ticks = 6
+                local numTicks = XerrPrioDB.swp.showOnlyLastTick and 1 or ticks
+                if ticks > 0 then
+                    for i = 1, numTicks do
+                        if not spell.ticks[i] then
+                            spell.ticks[i] = CreateFrame("Frame", "XerrPRIO" .. key .. "DotsTicks_" .. i, _G[frame], "XerrDotsTickTemplate")
+                        end
+                        spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * (3 / 18), 0)
+                        spell.ticks[i]:Show()
+                    end
+                end
+            end
+        end
+
+        for _, spell in next, self.bars.spells do
+            spell.frame:Show()
+        end
+
+        self.paused = false
+        XerrPrioBars:Show()
+        XerrPrioIcons:Show()
+    else
+
+        for _, spell in next, self.bars.spells do
+            spell.frame:Hide()
+        end
+
+        XerrPrioBars:Hide()
+        XerrPrioIcons:Hide()
+    end
+
+    for key, spell in next, self.bars.spells do
+        local frameName = 'XerrPrioBar_' .. key
+
+        if XerrPrioDB[key].showIcon then
+            _G[frameName .. 'Icon']:Show()
+        else
+            _G[frameName .. 'Icon']:Hide()
+        end
+
+        local barColor = XerrPrioDB[key].barColor
+        local textColor = XerrPrioDB[key].textColor
+        local refreshTextColor = XerrPrioDB[key].refreshTextColor
+        local refreshBarColor = XerrPrioDB[key].refreshBarColor
+
+        _G[frameName .. 'Duration']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
+        _G[frameName .. 'Name']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
+
+        _G[frameName .. 'RefreshDuration']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
+        _G[frameName .. 'Refresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
+
+    end
+
+end

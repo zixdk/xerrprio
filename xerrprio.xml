@@ -4,9 +4,9 @@
 
     <GameTooltip name="XerrPrioTooltipFrame" frameStrata="TOOLTIP" hidden="true" parent="UIParent" inherits="GameTooltipTemplate"/>
 
-    <Frame name="XerrDotsTickTemplate" virtual="true" alpha="0.1">
+    <Frame name="XerrPrioBarTickTemplate" virtual="true" alpha="0.3">
         <Size>
-            <AbsDimension x="1" y="24"/>
+            <AbsDimension x="2" y="24"/>
         </Size>
         <Layers>
             <Layer level="BORDER">
@@ -24,7 +24,7 @@
         </Layers>
     </Frame>
 
-    <Frame name="XerrPrioFrameTemplate" virtual="true" alpha="0.9">
+    <Frame name="XerrPrioBarFrameTemplate" virtual="true" alpha="0.9">
         <Size>
             <AbsDimension x="280" y="24"/>
         </Size>
@@ -54,6 +54,27 @@
                 </Texture>
             </Layer>
             <Layer level="OVERLAY">
+
+                <Texture file="Interface\Addons\xerrprio\Melli" name="$parentRefreshDuration" alpha="0.7">
+                    <Size x="260" y="24"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="0" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <Texture file="Interface\CastingBar\UI-CastingBar-Spark" name="$parentRefreshDurationSpark" alphaMode="ADD">
+                    <Size x="16" y="32"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="252" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
 
                 <Texture name="$parentIcon">
                     <Size x="24" y="24"/>
@@ -145,7 +166,7 @@
         </Layers>
     </Frame>
 
-    <Frame name="XERR_PRIO_Dots" toplevel="true" parent="UIParent" movable="true"
+    <Frame name="XerrPrioBars" toplevel="true" parent="UIParent" movable="true"
            enableMouse="true">
         <Size>
             <AbsDimension x="280" y="80"/>
@@ -173,7 +194,7 @@
 
     </Frame>
 
-    <Frame name="XERR_PRIO_Prio" toplevel="true" parent="UIParent" movable="true"
+    <Frame name="XerrPrioIcons" toplevel="true" parent="UIParent" movable="true"
            enableMouse="true">
         <Size>
             <AbsDimension x="100" y="100"/>

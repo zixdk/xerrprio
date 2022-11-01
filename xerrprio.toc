@@ -3,5 +3,10 @@
 ## Notes: Spriest prio spells
 ## Author: Xerron
 ## SavedVariablesPerCharacter: XerrPrioDB
+# Library files
+#@no-lib-strip@
+Libs\LibStub\LibStub.lua
+Libs\AceAddon-3.0\AceAddon-3.0.xml
+
 xerrprio.xml
 

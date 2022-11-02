@@ -202,39 +202,41 @@ function XerrPrio:Init()
 
     self.icons.spells.swd.lastCastTime = GetTime()
 
-    XerrPrioDB = {
-        configMode = false,
-        bars = true,
-        icons = true,
-        swp = {
-            enabled = true,
-            barColor = self.colors.swpDefault,
-            textColor = { r = 1, g = 1, b = 1, a = 1 },
-            showIcon = true,
-            showTicks = true,
-            showOnlyLastTick = true,
-            tickWidth = 1,
-            tickColor = { r = 0, g = 0, b = 0, a = 1 },
-            refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
-            refreshBarColor = { r = 0, g = 1, b = 0, a = 1 }
-        },
-        vt = {
-            enabled = true,
-            barColor = self.colors.vtDefault,
-            textColor = { r = 1, g = 1, b = 1, a = 1 },
-            showIcon = true,
-            showTicks = true,
-            showOnlyLastTick = true,
-            tickWidth = 1,
-            tickColor = { r = 0, g = 0, b = 0, a = 1 },
-            refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
-            refreshBarColor = { r = 0, g = 1, b = 0, a = 1 }
-        },
-        barWidth = 280,
-        barBackgroundColor = { r = 0, g = 0, b = 0, a = 1 },
-        refreshMinDuration = 5,
-        minDotDpsIncrease = 1
-    }
+    if not XerrPrioDB then
+        XerrPrioDB = {
+            configMode = false,
+            bars = true,
+            icons = true,
+            swp = {
+                enabled = true,
+                barColor = self.colors.swpDefault,
+                textColor = { r = 1, g = 1, b = 1, a = 1 },
+                showIcon = true,
+                showTicks = true,
+                showOnlyLastTick = true,
+                tickWidth = 1,
+                tickColor = { r = 0, g = 0, b = 0, a = 1 },
+                refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
+                refreshBarColor = { r = 0, g = 1, b = 0, a = 1 }
+            },
+            vt = {
+                enabled = true,
+                barColor = self.colors.vtDefault,
+                textColor = { r = 1, g = 1, b = 1, a = 1 },
+                showIcon = true,
+                showTicks = true,
+                showOnlyLastTick = true,
+                tickWidth = 1,
+                tickColor = { r = 0, g = 0, b = 0, a = 1 },
+                refreshTextColor = { r = 1, g = 1, b = 1, a = 1 },
+                refreshBarColor = { r = 0, g = 1, b = 0, a = 1 }
+            },
+            barWidth = 280,
+            barBackgroundColor = { r = 0, g = 0, b = 0, a = 1 },
+            refreshMinDuration = 5,
+            minDotDpsIncrease = 1
+        }
+    end
 
     self:UpdateConfig()
 
@@ -353,59 +355,59 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
                         if current_dps >= XerrPrio.dotStats[guid][key].dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                            _G[frame .. 'Refresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
+                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
 
                             if XerrPrio.lowestProcTime ~= 0 then
 
                                 local color = XerrPrioDB[key].refreshBarColor
                                 if XerrPrio.lowestProcTime > XerrPrioDB.refreshMinDuration then
-                                    _G[frame .. 'RefreshDuration']:SetVertexColor(1, 1, 1, 0.2)
+                                    _G[frame .. 'RefreshBar']:SetVertexColor(1, 1, 1, 0.2)
                                 else
-                                    _G[frame .. 'RefreshDuration']:SetVertexColor(color.r, color.g, color.b, color.a)
+                                    _G[frame .. 'RefreshBar']:SetVertexColor(color.r, color.g, color.b, color.a)
                                 end
 
-                                _G[frame .. 'RefreshDuration']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
-                                _G[frame .. 'RefreshDurationSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshDuration']:GetWidth() - 8, 0)
-                                _G[frame .. 'RefreshDurationSpark']:Show()
-                                _G[frame .. 'RefreshDuration']:Show()
+                                _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
+                                _G[frame .. 'RefreshSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshBar']:GetWidth() - 8, 0)
+                                _G[frame .. 'RefreshSpark']:Show()
+                                _G[frame .. 'RefreshBar']:Show()
 
                             end
 
                         else
-                            _G[frame .. 'Refresh']:SetText(sformat('%.1f', tl))
-                            _G[frame .. 'RefreshDurationSpark']:Hide()
-                            _G[frame .. 'RefreshDuration']:Hide()
+                            _G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', tl))
+                            _G[frame .. 'RefreshSpark']:Hide()
+                            _G[frame .. 'RefreshBar']:Hide()
                         end
 
                         if tof then
-                            _G[frame .. 'ToF']:SetText('ToF')
-                            _G[frame .. 'ToF']:SetTextColor(XerrPrio.dotStats[guid][key].tof and 0 or 1, XerrPrio.dotStats[guid][key].tof and 1 or 0, 0)
+                            _G[frame .. 'TextsToF']:SetText('ToF')
+                            _G[frame .. 'TextsToF']:SetTextColor(XerrPrio.dotStats[guid][key].tof and 0 or 1, XerrPrio.dotStats[guid][key].tof and 1 or 0, 0)
                         else
                             if XerrPrio.dotStats[guid][key].tof then
-                                _G[frame .. 'ToF']:SetText('ToF')
-                                _G[frame .. 'ToF']:SetTextColor(0, 1, 0)
+                                _G[frame .. 'TextsToF']:SetText('ToF')
+                                _G[frame .. 'TextsToF']:SetTextColor(0, 1, 0)
                             else
-                                _G[frame .. 'ToF']:SetText('')
+                                _G[frame .. 'TextsToF']:SetText('')
                             end
                         end
 
                         if uvls then
-                            _G[frame .. 'UVLS']:SetText('UVLS')
-                            _G[frame .. 'UVLS']:SetTextColor(XerrPrio.dotStats[guid][key].uvls and 0 or 1, XerrPrio.dotStats[guid][key].uvls and 1 or 0, 0)
+                            _G[frame .. 'TextsUVLS']:SetText('UVLS')
+                            _G[frame .. 'TextsUVLS']:SetTextColor(XerrPrio.dotStats[guid][key].uvls and 0 or 1, XerrPrio.dotStats[guid][key].uvls and 1 or 0, 0)
                         else
                             if XerrPrio.dotStats[guid][key].uvls then
-                                _G[frame .. 'UVLS']:SetText('UVLS')
-                                _G[frame .. 'UVLS']:SetTextColor(0, 1, 0)
+                                _G[frame .. 'TextsUVLS']:SetText('UVLS')
+                                _G[frame .. 'TextsUVLS']:SetTextColor(0, 1, 0)
                             else
-                                _G[frame .. 'UVLS']:SetText('')
+                                _G[frame .. 'TextsUVLS']:SetText('')
                             end
                         end
 
                     end
 
-                    _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * perc)
-                    _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
-                    _G[frame .. 'TimeLeft']:SetText(math.floor(tl))
+                    _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
+                    _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
+                    _G[frame .. 'TextsTimeLeft']:SetText(math.floor(tl))
 
                     for i = 1, #spell.ticks do
                         spell.ticks[i]:Hide()

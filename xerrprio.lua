@@ -361,7 +361,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                 if XerrPrio.lowestProcTime > XerrPrioDB.refreshMinDuration then
                                     _G[frame .. 'RefreshDuration']:SetVertexColor(1, 1, 1, 0.2)
                                 else
-                                    local color = XerrPrioDB[key].refreshBarColor
                                     _G[frame .. 'RefreshDuration']:SetVertexColor(color.r, color.g, color.b, color.a)
                                 end
 
@@ -405,9 +404,9 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                     end
 
                     _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * perc)
+                    _G[frame .. 'Background']:SetWidth(XerrPrioDB.barWidth * perc)
                     _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
                     _G[frame .. 'TimeLeft']:SetText(math.floor(tl))
-                    _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
 
                     for i = 1, #spell.ticks do
                         spell.ticks[i]:Hide()
@@ -923,11 +922,11 @@ function XerrPrio:CreateOptions()
                 desc = "Config mode desc",
                 type = "toggle",
                 width = "full",
-                set = function(info, val)
+                set = function(_, val)
                     XerrPrioDB.configMode = val
                     XerrPrio:UpdateConfig()
                 end,
-                get = function(info)
+                get = function()
                     return XerrPrioDB.configMode
                 end
             },
@@ -947,7 +946,7 @@ function XerrPrio:CreateOptions()
                         get = function()
                             return XerrPrioDB.refreshMinDuration
                         end,
-                        set = function(self, val)
+                        set = function(_, val)
                             XerrPrioDB.refreshMinDuration = val
                             XerrPrio:UpdateConfig()
                         end,
@@ -964,7 +963,7 @@ function XerrPrio:CreateOptions()
                         get = function()
                             return XerrPrioDB.minDotDpsIncrease
                         end,
-                        set = function(self, val)
+                        set = function(_, val)
                             XerrPrioDB.minDotDpsIncrease = val
                             XerrPrio:UpdateConfig()
                         end,
@@ -983,11 +982,11 @@ function XerrPrio:CreateOptions()
                         desc = "Bars for SWP and VT",
                         type = "toggle",
                         width = "full",
-                        set = function(info, val)
+                        set = function(_, val)
                             XerrPrioDB.bars = val
                             XerrPrio:UpdateConfig()
                         end,
-                        get = function(info)
+                        get = function()
                             return XerrPrioDB.bars
                         end
                     },
@@ -1002,7 +1001,7 @@ function XerrPrio:CreateOptions()
                         get = function()
                             return XerrPrioDB.barWidth
                         end,
-                        set = function(self, val)
+                        set = function(_, val)
                             XerrPrioDB.barWidth = val
                             XerrPrio:UpdateConfig()
                         end,
@@ -1020,11 +1019,11 @@ function XerrPrio:CreateOptions()
                                 desc = "Enable SWP Bar",
                                 type = "toggle",
                                 width = "full",
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.swp.enabled = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.swp.enabled
                                 end
                             },
@@ -1034,14 +1033,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Show SWP Icon",
                                 type = "toggle",
                                 width = "full",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.swp.showIcon = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.swp.showIcon
                                 end
                             },
@@ -1051,14 +1050,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP Text",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.swp.textColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.swp.textColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1069,14 +1068,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP Bar",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.swp.barColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.swp.barColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1086,7 +1085,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Text Color",
                                 desc = "Reset Text Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
                                 func = function()
@@ -1099,7 +1098,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Bar Color",
                                 desc = "Reset Bar Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
                                 func = function()
@@ -1112,14 +1111,14 @@ function XerrPrio:CreateOptions()
                                 name = "Show Ticks",
                                 desc = "Show DOT ticks",
                                 type = "toggle",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.swp.showTicks = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.swp.showTicks
                                 end
                             },
@@ -1128,14 +1127,14 @@ function XerrPrio:CreateOptions()
                                 name = "Only last tick",
                                 desc = "Show only last tick",
                                 type = "toggle",
-                                disabled = function(info)
-                                    return not XerrPrioDB.swp.enabled and not XerrPrioDB.swp.showTicks
+                                disabled = function()
+                                    return (not XerrPrioDB.swp.enabled and not XerrPrioDB.swp.showTicks) or not XerrPrioDB.swp.showTicks
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.swp.showOnlyLastTick = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.swp.showOnlyLastTick
                                 end
                             },
@@ -1145,14 +1144,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP tick",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
-                                    return not XerrPrioDB.swp.enabled
+                                disabled = function()
+                                    return (not XerrPrioDB.swp.enabled and not XerrPrioDB.swp.showTicks) or not XerrPrioDB.swp.showTicks
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.swp.tickColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.swp.tickColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1165,10 +1164,13 @@ function XerrPrio:CreateOptions()
                                 min = 1,
                                 max = 5,
                                 step = 1,
+                                disabled = function()
+                                    return (not XerrPrioDB.swp.enabled and not XerrPrioDB.swp.showTicks) or not XerrPrioDB.swp.showTicks
+                                end,
                                 get = function()
                                     return XerrPrioDB.swp.tickWidth
                                 end,
-                                set = function(self, val)
+                                set = function(_, val)
                                     XerrPrioDB.swp.tickWidth = val
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1180,14 +1182,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP Refresh Text",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.swp.refreshTextColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.swp.refreshTextColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1198,14 +1200,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP Refresh Bar",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.swp.refreshBarColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.swp.refreshBarColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1215,7 +1217,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Refresh Text Color",
                                 desc = "Reset Refresh Text Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
                                 func = function()
@@ -1228,7 +1230,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Refresh Bar Color",
                                 desc = "Reset Refresh Bar Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.swp.enabled
                                 end,
                                 func = function()
@@ -1250,11 +1252,11 @@ function XerrPrio:CreateOptions()
                                 desc = "Enable VT Bar",
                                 type = "toggle",
                                 width = "full",
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.vt.enabled = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.vt.enabled
                                 end
                             },
@@ -1264,14 +1266,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Show VT Icon",
                                 type = "toggle",
                                 width = "full",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.vt.showIcon = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.vt.showIcon
                                 end
                             },
@@ -1281,14 +1283,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the VT Text",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.vt.textColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.vt.textColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1299,14 +1301,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the VT Bar",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.vt.barColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.vt.barColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1316,7 +1318,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Text Color",
                                 desc = "Reset Text Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
                                 func = function()
@@ -1329,7 +1331,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Bar Color",
                                 desc = "Reset Bar Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
                                 func = function()
@@ -1342,14 +1344,14 @@ function XerrPrio:CreateOptions()
                                 name = "Show Ticks",
                                 desc = "Show DOT ticks",
                                 type = "toggle",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.vt.showTicks = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.vt.showTicks
                                 end
                             },
@@ -1358,14 +1360,14 @@ function XerrPrio:CreateOptions()
                                 name = "Only last tick",
                                 desc = "Show only last tick",
                                 type = "toggle",
-                                disabled = function(info)
-                                    return not XerrPrioDB.vt.enabled and not XerrPrioDB.vt.showTicks
+                                disabled = function()
+                                    return (not XerrPrioDB.vt.enabled and not XerrPrioDB.vt.showTicks) or not XerrPrioDB.vt.showTicks
                                 end,
-                                set = function(info, val)
+                                set = function(_, val)
                                     XerrPrioDB.vt.showOnlyLastTick = val
                                     XerrPrio:UpdateConfig()
                                 end,
-                                get = function(info)
+                                get = function()
                                     return XerrPrioDB.vt.showOnlyLastTick
                                 end
                             },
@@ -1375,15 +1377,15 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the SWP tick",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
-                                    return not XerrPrioDB.swp.enabled
+                                disabled = function()
+                                    return (not XerrPrioDB.vt.enabled and not XerrPrioDB.vt.showTicks) or not XerrPrioDB.vt.showTicks
                                 end,
-                                get = function(info)
-                                    local c = XerrPrioDB.swp.tickColor
+                                get = function()
+                                    local c = XerrPrioDB.vt.tickColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
-                                    XerrPrioDB.swp.tickColor = { r = r, g = g, b = b, a = a }
+                                set = function(_, r, g, b, a)
+                                    XerrPrioDB.vt.tickColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
                             },
@@ -1395,11 +1397,14 @@ function XerrPrio:CreateOptions()
                                 min = 1,
                                 max = 5,
                                 step = 1,
-                                get = function()
-                                    return XerrPrioDB.swp.tickWidth
+                                disabled = function()
+                                    return (not XerrPrioDB.vt.enabled and not XerrPrioDB.vt.showTicks) or not XerrPrioDB.vt.showTicks
                                 end,
-                                set = function(self, val)
-                                    XerrPrioDB.swp.tickWidth = val
+                                get = function()
+                                    return XerrPrioDB.vt.tickWidth
+                                end,
+                                set = function(_, val)
+                                    XerrPrioDB.vt.tickWidth = val
                                     XerrPrio:UpdateConfig()
                                 end,
 
@@ -1410,14 +1415,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the VT Refresh Text",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.vt.refreshTextColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.vt.refreshTextColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1428,14 +1433,14 @@ function XerrPrio:CreateOptions()
                                 desc = "Color of the VT Refresh Bar",
                                 type = "color",
                                 hasAlpha = true,
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
-                                get = function(info)
+                                get = function()
                                     local c = XerrPrioDB.vt.refreshBarColor
                                     return c.r, c.g, c.b, c.a
                                 end,
-                                set = function(info, r, g, b, a)
+                                set = function(_, r, g, b, a)
                                     XerrPrioDB.vt.refreshBarColor = { r = r, g = g, b = b, a = a }
                                     XerrPrio:UpdateConfig()
                                 end,
@@ -1445,7 +1450,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Refresh Text Color",
                                 desc = "Reset Refresh Text Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
                                 func = function()
@@ -1458,7 +1463,7 @@ function XerrPrio:CreateOptions()
                                 name = "Reset Refresh Bar Color",
                                 desc = "Reset Refresh Bar Color to default value",
                                 type = "execute",
-                                disabled = function(info)
+                                disabled = function()
                                     return not XerrPrioDB.vt.enabled
                                 end,
                                 func = function()
@@ -1481,11 +1486,11 @@ function XerrPrio:CreateOptions()
                         desc = "Icons for next spell on priority list",
                         type = "toggle",
                         width = "full",
-                        set = function(info, val)
+                        set = function(_, val)
                             XerrPrioDB.icons = val
                             XerrPrio:UpdateConfig()
                         end,
-                        get = function(info)
+                        get = function()
                             return XerrPrioDB.icons
                         end
                     },
@@ -1508,81 +1513,35 @@ function XerrPrio:UpdateConfig()
         XerrPrioIcons:Show()
     end
 
+    self.paused = not XerrPrioDB.configMode
+
     if XerrPrioDB.configMode then
-
-        XerrPrioBars:SetWidth(XerrPrioDB.barWidth)
-        XerrPrioBars:SetHeight(48)
         XerrPrioBarsBackground:Show()
-
-        for key, spell in next, self.bars.spells do
-
-            local frame = spell.frame:GetName()
-
-            _G[frame .. 'RefreshDuration']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / 18))
-            _G[frame .. 'RefreshDurationSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshDuration']:GetWidth() - 8, 0)
-            _G[frame .. 'RefreshDurationSpark']:Show()
-            _G[frame .. 'RefreshDuration']:Show()
-
-            _G[frame .. 'Refresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
-
-            _G[frame .. 'ToF']:SetText('ToF')
-            _G[frame .. 'ToF']:SetTextColor(0, 1, 0, 0)
-            _G[frame .. 'ToF']:Show()
-
-            _G[frame .. 'UVLS']:SetText('UVLS')
-            _G[frame .. 'UVLS']:SetTextColor(0, 1, 0, 0)
-            _G[frame .. 'UVLS']:Show()
-
-            _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * 0.75)
-            _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
-            _G[frame .. 'TimeLeft']:SetText(12)
-            _G[frame .. 'TimeLeft']:SetTextColor(1, 1, 1)
-
-            for i = 1, #spell.ticks do
-                spell.ticks[i]:Hide()
-            end
-            if XerrPrioDB[key].showTicks then
-                local ticks = 6
-                local numTicks = XerrPrioDB[key].showOnlyLastTick and 1 or ticks
-                if ticks > 0 then
-                    for i = 1, numTicks do
-                        if not spell.ticks[i] then
-                            spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
-                        end
-                        spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * (3 / 18), 0)
-                        local tickColor = XerrPrioDB[key].tickColor
-                        _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetVertexColor(tickColor.r, tickColor.g, tickColor.b, tickColor.a)
-                        _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetWidth(XerrPrioDB[key].tickWidth)
-                        spell.ticks[i]:Show()
-                    end
-                end
-            end
-        end
-
-        for key, spell in next, self.bars.spells do
-            if XerrPrioDB[key].enabled then
-                spell.frame:Show()
-            else
-                spell.frame:Hide()
-            end
-        end
-
-        self.paused = false
     else
         for _, spell in next, self.bars.spells do
             spell.frame:Hide()
         end
-
         XerrPrioBarsBackground:Hide()
     end
 
+    XerrPrioBars:SetWidth(XerrPrioDB.barWidth)
+    XerrPrioBars:SetHeight(48)
+
     for key, spell in next, self.bars.spells do
-        local frameName = 'XerrPrioBar_' .. key
+        local frame = spell.frame:GetName()
+
+        spell.frame:SetWidth(XerrPrioDB.barWidth)
+
+        if XerrPrioDB[key].enabled then
+            spell.frame:Show()
+        else
+            spell.frame:Hide()
+        end
 
         if XerrPrioDB[key].showIcon then
-            _G[frameName .. 'Icon']:Show()
+            _G[frame .. 'Icon']:Show()
         else
-            _G[frameName .. 'Icon']:Hide()
+            _G[frame .. 'Icon']:Hide()
         end
 
         local barColor = XerrPrioDB[key].barColor
@@ -1590,11 +1549,51 @@ function XerrPrio:UpdateConfig()
         local refreshTextColor = XerrPrioDB[key].refreshTextColor
         local refreshBarColor = XerrPrioDB[key].refreshBarColor
 
-        _G[frameName .. 'Duration']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
-        _G[frameName .. 'Name']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
+        _G[frame .. 'RefreshDuration']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / 18))
+        _G[frame .. 'RefreshDuration']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
+        _G[frame .. 'RefreshDuration']:Show()
+        _G[frame .. 'RefreshDurationSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshDuration']:GetWidth() - 8, 0)
+        _G[frame .. 'RefreshDurationSpark']:Show()
+        _G[frame .. 'Refresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
+        _G[frame .. 'Refresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
 
-        _G[frameName .. 'RefreshDuration']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
-        _G[frameName .. 'Refresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
+        _G[frame .. 'Duration']:SetWidth(XerrPrioDB.barWidth * 0.75)
+        _G[frame .. 'Duration']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
+        _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Duration']:GetWidth() - 8, 0)
+
+        _G[frame .. 'Name']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
+
+        _G[frame .. 'TimeLeft']:SetText(12)
+        _G[frame .. 'TimeLeft']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
+        _G[frame .. 'Background']:SetWidth(XerrPrioDB.barWidth)
+
+        _G[frame .. 'ToF']:SetText('ToF')
+        _G[frame .. 'ToF']:SetTextColor(0, 1, 0, 0)
+        _G[frame .. 'ToF']:Show()
+
+        _G[frame .. 'UVLS']:SetText('UVLS')
+        _G[frame .. 'UVLS']:SetTextColor(0, 1, 0, 0)
+        _G[frame .. 'UVLS']:Show()
+
+        for i = 1, #spell.ticks do
+            spell.ticks[i]:Hide()
+        end
+        if XerrPrioDB[key].showTicks then
+            local ticks = 6
+            local numTicks = XerrPrioDB[key].showOnlyLastTick and 1 or ticks
+            if ticks > 0 then
+                for i = 1, numTicks do
+                    if not spell.ticks[i] then
+                        spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
+                    end
+                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * (3 / 18), 0)
+                    local tickColor = XerrPrioDB[key].tickColor
+                    _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetVertexColor(tickColor.r, tickColor.g, tickColor.b, tickColor.a)
+                    _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetWidth(XerrPrioDB[key].tickWidth)
+                    spell.ticks[i]:Show()
+                end
+            end
+        end
 
     end
 

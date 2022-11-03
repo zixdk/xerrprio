@@ -32,13 +32,13 @@ XerrPrio.bars = {
         swp = {
             frame = nil,
             ord = 1,
-            name = '', id = 589, dps = 0, duration = 0, interval = 0,
+            name = '', id = 589,
             ticks = {}
         },
         vt = {
             frame = nil,
             ord = 2,
-            name = '', id = 34914, dps = 0, duration = 0, interval = 0,
+            name = '', id = 34914,
             ticks = {}
         }
     }
@@ -300,13 +300,13 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                     local _, _, interval = strfind(tooltipDescription, "every (%S+) sec")
 
                     if spellId == XerrPrio.icons.spells.swp.id then
-                        XerrPrio.bars.spells.swp.duration = duration
-                        XerrPrio.bars.spells.swp.interval = interval
+                        XerrPrio.dotStats[self.dotScanner.guid].swp.duration = duration
+                        XerrPrio.dotStats[self.dotScanner.guid].swp.interval = interval
                         self.dotScanner.enabled = false
                     end
                     if spellId == XerrPrio.icons.spells.vt.id then
-                        XerrPrio.bars.spells.vt.duration = duration
-                        XerrPrio.bars.spells.vt.interval = interval
+                        XerrPrio.dotStats[self.dotScanner.guid].vt.duration = duration
+                        XerrPrio.dotStats[self.dotScanner.guid].vt.interval = interval
                         self.dotScanner.enabled = false
                     end
 
@@ -323,19 +323,21 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                 local frame = spell.frame:GetName()
                 if tl > 0 then
 
-                    self.show = true
-
-                    local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.twistOfFateId), XerrPrio:PlayerHasProc(XerrPrio.uvlsId)
                     local guid = UnitGUID('target')
 
                     if XerrPrio.dotStats[guid] and XerrPrio.dotStats[guid][key] then
 
+                        self.show = true
+
+                        local stats = XerrPrio.dotStats[guid][key]
+
+                        local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.twistOfFateId), XerrPrio:PlayerHasProc(XerrPrio.uvlsId)
                         local current_dps = XerrPrio:GetSpellDamage(spell.id)
 
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
-                        if current_dps >= XerrPrio.dotStats[guid][key].dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. sformat("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
+                        if current_dps >= stats.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
+                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. sformat("%.2f", current_dps / stats.dps) .. 'x')
 
                             if XerrPrio.lowestProcTime ~= 0 then
 
@@ -361,9 +363,9 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         if tof then
                             _G[frame .. 'TextsToF']:SetText('ToF')
-                            _G[frame .. 'TextsToF']:SetTextColor(XerrPrio.dotStats[guid][key].tof and 0 or 1, XerrPrio.dotStats[guid][key].tof and 1 or 0, 0)
+                            _G[frame .. 'TextsToF']:SetTextColor(stats.tof and 0 or 1, stats.tof and 1 or 0, 0)
                         else
-                            if XerrPrio.dotStats[guid][key].tof then
+                            if stats.tof then
                                 _G[frame .. 'TextsToF']:SetText('ToF')
                                 _G[frame .. 'TextsToF']:SetTextColor(0, 1, 0)
                             else
@@ -373,9 +375,9 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         if uvls then
                             _G[frame .. 'TextsUVLS']:SetText('UVLS')
-                            _G[frame .. 'TextsUVLS']:SetTextColor(XerrPrio.dotStats[guid][key].uvls and 0 or 1, XerrPrio.dotStats[guid][key].uvls and 1 or 0, 0)
+                            _G[frame .. 'TextsUVLS']:SetTextColor(stats.uvls and 0 or 1, stats.uvls and 1 or 0, 0)
                         else
-                            if XerrPrio.dotStats[guid][key].uvls then
+                            if stats.uvls then
                                 _G[frame .. 'TextsUVLS']:SetText('UVLS')
                                 _G[frame .. 'TextsUVLS']:SetTextColor(0, 1, 0)
                             else
@@ -383,30 +385,30 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                             end
                         end
 
-                    end
 
-                    _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
-                    _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
-                    _G[frame .. 'TextsTimeLeft']:SetText(math.floor(tl))
+                        _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
+                        _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
+                        _G[frame .. 'TextsTimeLeft']:SetText(math.floor(tl))
 
-                    for i = 1, #spell.ticks do
-                        spell.ticks[i]:Hide()
-                    end
-                    if XerrPrioDB[key].showTicks then
-                        local ticks = math.floor(spell.duration / spell.interval)
-                        local numTicks = XerrPrioDB[key].showOnlyLastTick and 1 or ticks
-                        if ticks > 0 then
-                            for i = 1, numTicks do
-                                if not spell.ticks[i] then
-                                    spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
+                        for i = 1, #spell.ticks do
+                            spell.ticks[i]:Hide()
+                        end
+                        if XerrPrioDB[key].showTicks then
+                            local ticks = math.floor(stats.duration / stats.interval)
+                            local numTicks = XerrPrioDB[key].showOnlyLastTick and 2 or ticks
+                            if ticks > 0 then
+                                for i = 1, numTicks do
+                                    if not spell.ticks[i] then
+                                        spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
+                                    end
+                                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", (XerrPrioDB.barWidth / ticks) * (i - 1), 0)
+                                    spell.ticks[i]:Show()
                                 end
-                                spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * spell.interval / spell.duration, 0)
-                                spell.ticks[i]:Show()
                             end
                         end
+                        _G[frame]:Show()
                     end
 
-                    _G[frame]:Show()
                 else
                     _G[frame]:Hide()
                 end
@@ -454,6 +456,8 @@ function XerrPrio:SpellCast(id)
                 self.dotStats[guid][key] = {
                     tof = false,
                     uvls = false,
+                    duration = 0,
+                    interval = 0,
                     dps = 0
                 }
             end
@@ -465,6 +469,7 @@ function XerrPrio:SpellCast(id)
 
             XerrPrio.Worker.dotScanner.spellId = id
             XerrPrio.Worker.dotScanner.enabled = true
+            XerrPrio.Worker.dotScanner.guid = guid
 
             return
         end
@@ -1583,13 +1588,13 @@ function XerrPrio:UpdateConfig()
         end
         if XerrPrioDB[key].showTicks then
             local ticks = 6
-            local numTicks = XerrPrioDB[key].showOnlyLastTick and 1 or ticks
+            local numTicks = XerrPrioDB[key].showOnlyLastTick and 2 or ticks
             if ticks > 0 then
                 for i = 1, numTicks do
                     if not spell.ticks[i] then
                         spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
                     end
-                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * (i - 1) * ((18 / 6) / 18), 0)
+                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", (XerrPrioDB.barWidth / ticks) * (i - 1), 0)
                     local tickColor = XerrPrioDB[key].tickColor
                     _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetVertexColor(tickColor.r, tickColor.g, tickColor.b, tickColor.a)
                     _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetWidth(XerrPrioDB[key].tickWidth)

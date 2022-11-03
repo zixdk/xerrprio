@@ -1,6 +1,6 @@
 local _G = _G
-local tinsert, tablesize, select, strfind, strsplit, tonumber = tinsert, table.getn, select, strfind, strsplit, tonumber
-local gsub, strsub, strlen, sformat = string.gsub, strsub, strlen, string.format
+local tinsert, tablesize, select, strfind, tonumber = tinsert, table.getn, select, strfind, tonumber
+local strsub, strlen, sformat = strsub, strlen, string.format
 local _, class = UnitClass('player')
 
 -- known issues
@@ -21,6 +21,11 @@ XerrPrio.paused = true
 XerrPrio.spellBookSpells = {}
 XerrPrio.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
 XerrPrio.hp_path_icon = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Shadow_Icon\\';
+
+XerrPrio.lowestProcTime = 0
+XerrPrio.twistOfFateId = 123254
+XerrPrio.uvlsId = 138963
+XerrPrio.dotStats = {}
 
 XerrPrio.bars = {
     spells = {
@@ -53,33 +58,15 @@ XerrPrio.icons = {
 
 XerrPrio.buffs = {
     spells = {
-        meta = {
-            id = 137590, duration = 0
-        },
-        lightweave = {
-            id = 125487, duration = 0
-        },
-        jade = {
-            id = 104993, duration = 0
-        },
-        volatile = {
-            id = 138703, duration = 0
-        },
-        hydra = {
-            id = 138898, duration = 0
-        },
-        heroism = {
-            id = 32182, duration = 0
-        },
-        bloodlust = {
-            id = 2825, duration = 0,
-        },
-        timewarp = {
-            id = 80353, duration = 0,
-        },
-        ancienthysteria = {
-            id = 90355, duration = 0
-        }
+        meta = { id = 137590, duration = 0 },
+        lightweave = { id = 125487, duration = 0 },
+        jade = { id = 104993, duration = 0 },
+        volatile = { id = 138703, duration = 0 },
+        hydra = { id = 138898, duration = 0 },
+        heroism = { id = 32182, duration = 0 },
+        bloodlust = { id = 2825, duration = 0 },
+        timewarp = { id = 80353, duration = 0 },
+        ancienthysteria = { id = 90355, duration = 0 }
     }
 }
 
@@ -87,8 +74,6 @@ XerrPrio.nextSpell = {
     [1] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' },
     [2] = { id = 0, icon = 'Interface\\Icons\\INV_Misc_QuestionMark' }
 }
-
-XerrPrio.lowestProcTime = 0
 
 XerrPrio.colors = {
     whiteHex = '|cffffffff',
@@ -105,11 +90,6 @@ XerrPrio.colors = {
     swpDefault = { r = 255 / 255, g = 65 / 255, b = 9 / 255, a = 1 },
     vtDefault = { r = 60 / 255, g = 52 / 255, b = 175 / 255, a = 1 }
 }
-
-XerrPrio.dotStats = {}
-
-XerrPrio.twistOfFateId = 123254
-XerrPrio.uvlsId = 138963
 
 --------------------
 --- Events
@@ -350,12 +330,12 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                     if XerrPrio.dotStats[guid] and XerrPrio.dotStats[guid][key] then
 
-                        local current_dps, current_damage = XerrPrio:GetSpellDamage(spell.id)
+                        local current_dps = XerrPrio:GetSpellDamage(spell.id)
 
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
                         if current_dps >= XerrPrio.dotStats[guid][key].dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. string.format("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
+                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. sformat("%.2f", current_dps / XerrPrio.dotStats[guid][key].dps) .. 'x')
 
                             if XerrPrio.lowestProcTime ~= 0 then
 
@@ -456,6 +436,11 @@ end)
 
 function XerrPrio:SpellCast(id)
 
+    if id == self.icons.spells.swd.id then
+        self.icons.spells.swd.lastCastTime = GetTime()
+        return
+    end
+
     local guid = UnitGUID('target')
 
     for key, spell in next, self.bars.spells do
@@ -469,25 +454,20 @@ function XerrPrio:SpellCast(id)
                 self.dotStats[guid][key] = {
                     tof = false,
                     uvls = false,
-                    dps = 0,
-                    damage = 0
+                    dps = 0
                 }
             end
 
             self.dotStats[guid][key].tof = self:PlayerHasProc(self.twistOfFateId)
             self.dotStats[guid][key].uvls = self:PlayerHasProc(self.uvlsId)
 
-            self.dotStats[guid][key].dps, XerrPrio.dotStats[guid][key].damage = self:GetSpellDamage(spell.id)
+            self.dotStats[guid][key].dps = self:GetSpellDamage(spell.id)
 
             XerrPrio.Worker.dotScanner.spellId = id
             XerrPrio.Worker.dotScanner.enabled = true
 
             return
         end
-    end
-
-    if id == self.icons.spells.swd.id then
-        self.icons.spells.swd.lastCastTime = GetTime()
     end
 end
 
@@ -525,12 +505,9 @@ function XerrPrio:GetDebuffInfo(id)
     end
     for i = 1, 40 do
         local _, _, _, _, _, duration, expirationTime, unitCaster, _, _, spellId = UnitDebuff('target', i)
-        if unitCaster == "player" then
-            if spellId == id then
-                local tl = expirationTime - GetTime()
-                local perc = tl / duration
-                return expirationTime - GetTime(), perc, duration
-            end
+        if spellId == id and unitCaster == "player" then
+            local tl = expirationTime - GetTime()
+            return tl, tl / duration, duration
         end
     end
     return 0, 0, 0
@@ -538,8 +515,7 @@ end
 
 function XerrPrio:PlayerHasProc(procId)
     for i = 1, 40 do
-        local _, _, _, _, _, _, _, _, _, _, id = UnitBuff('player', i)
-        if id == procId then
+        if select(11, UnitBuff('player', i)) == procId then
             return true
         end
     end
@@ -621,11 +597,11 @@ function XerrPrio:GetNextSpell()
     local guid = UnitGUID('target')
     -- refresh dots if uvls procd
     if self:PlayerHasProc(self.uvlsId) and self.dotStats[guid] then
-        if self.dotStats[guid].swp and not self.dotStats[guid].swp.uvls then
-            tinsert(prio, self.icons.spells.swp)
-        end
         if self.dotStats[guid].vt and not self.dotStats[guid].vt.uvls then
             tinsert(prio, self.icons.spells.vt)
+        end
+        if self.dotStats[guid].swp and not self.dotStats[guid].swp.uvls then
+            tinsert(prio, self.icons.spells.swp)
         end
     end
 
@@ -637,17 +613,17 @@ function XerrPrio:GetNextSpell()
     if self:GetSpellCooldown(self.icons.spells.mb.id) > 1.5 and self:GetDebuffInfo(self.icons.spells.dp.id) == 0 then
 
         if self.dotStats[guid] then
-            if self.dotStats[guid].swp then
-                if self:GetSpellDamage(self.icons.spells.swp.id) >= self.dotStats[guid].swp.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                    if self.lowestProcTime > 0 and self.lowestProcTime <= XerrPrioDB.refreshMinDuration then
-                        tinsert(prio, self.icons.spells.swp)
-                    end
-                end
-            end
             if self.dotStats[guid].vt then
                 if self:GetSpellDamage(self.icons.spells.vt.id) >= self.dotStats[guid].vt.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
                     if self.lowestProcTime > 0 and self.lowestProcTime <= XerrPrioDB.refreshMinDuration then
                         tinsert(prio, self.icons.spells.vt)
+                    end
+                end
+            end
+            if self.dotStats[guid].swp then
+                if self:GetSpellDamage(self.icons.spells.swp.id) >= self.dotStats[guid].swp.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
+                    if self.lowestProcTime > 0 and self.lowestProcTime <= XerrPrioDB.refreshMinDuration then
+                        tinsert(prio, self.icons.spells.swp)
                     end
                 end
             end
@@ -731,20 +707,20 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
-    -- swp
-    if self:GetDebuffInfo(self.icons.spells.swp.id) < 0.5 then
-        tinsert(prio, self.icons.spells.swp)
+    -- vt
+    if self:GetDebuffInfo(self.icons.spells.vt.id) >= 0 then
+        if self:GetDebuffInfo(self.icons.spells.vt.id) < select(3, self:GetSpellInfo(self.icons.spells.vt.id)) then
+            tinsert(prio, self.icons.spells.vt)
+        end
     end
 
     if tablesize(prio) == 2 then
         return prio
     end
 
-    -- vt
-    if self:GetDebuffInfo(self.icons.spells.vt.id) >= 0 then
-        if self:GetDebuffInfo(self.icons.spells.vt.id) < select(3, self:GetSpellInfo(self.icons.spells.vt.id)) then
-            tinsert(prio, self.icons.spells.vt)
-        end
+    -- swp
+    if self:GetDebuffInfo(self.icons.spells.swp.id) < 0.5 then
+        tinsert(prio, self.icons.spells.swp)
     end
 
     if tablesize(prio) == 2 then
@@ -1606,14 +1582,14 @@ function XerrPrio:UpdateConfig()
             spell.ticks[i]:Hide()
         end
         if XerrPrioDB[key].showTicks then
-            local ticks = 15
+            local ticks = 6
             local numTicks = XerrPrioDB[key].showOnlyLastTick and 1 or ticks
             if ticks > 0 then
                 for i = 1, numTicks do
                     if not spell.ticks[i] then
                         spell.ticks[i] = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_" .. i, _G[frame], "XerrPrioBarTickTemplate")
                     end
-                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * i * ((18 / 15) / 18), 0)
+                    spell.ticks[i]:SetPoint("TOPLEFT", _G[frame], "TOPLEFT", XerrPrioDB.barWidth * (i - 1) * ((18 / 6) / 18), 0)
                     local tickColor = XerrPrioDB[key].tickColor
                     _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetVertexColor(tickColor.r, tickColor.g, tickColor.b, tickColor.a)
                     _G["XerrPrio_" .. key .. "_BarTicks_" .. i .. "Tick"]:SetWidth(XerrPrioDB[key].tickWidth)

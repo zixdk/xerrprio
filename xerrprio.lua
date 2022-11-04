@@ -9,6 +9,14 @@ local _, class = UnitClass('player')
 xerrprio = LibStub("AceAddon-3.0"):NewAddon("xerrprio", "AceConsole-3.0", "AceEvent-3.0")
 local xerrprio = xerrprio
 
+local function xprint(a)
+    if not a then
+        print('|cff37d63e[xp] |rattempt to print a nil value.')
+        return
+    end
+    print('|cff37d63e[xp] |r' .. a)
+end
+
 --------------------
 --- Inits
 --------------------

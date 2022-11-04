@@ -115,7 +115,9 @@ XerrPrio:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5
             return false
         end
         if event == 'UNIT_SPELLCAST_SUCCEEDED' and arg1 == 'player' and UnitGUID('target') then
-            self:SpellCast(arg5)
+            if arg5 == self.icons.spells.swd.id or arg5 == self.icons.spells.swp.id or arg5 == self.icons.spells.vt.id then
+                self:SpellCast(arg5, UnitGUID('target'))
+            end
             return
         end
         if event == 'PLAYER_TARGET_CHANGED' then
@@ -436,14 +438,12 @@ end)
 --- Helpers
 --------------------
 
-function XerrPrio:SpellCast(id)
+function XerrPrio:SpellCast(id, guid)
 
     if id == self.icons.spells.swd.id then
         self.icons.spells.swd.lastCastTime = GetTime()
         return
     end
-
-    local guid = UnitGUID('target')
 
     for key, spell in next, self.bars.spells do
         if id == spell.id then

@@ -267,7 +267,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
     if self.timeSinceLastUpdate >= 0.05 then
         self.timeSinceLastUpdate = 0;
 
-        self.dotScanner.enabled = not XerrPrio.paused and not XerrPrioDB.configMode and (XerrPrioDB.bars or XerrPrioDB.icons)
         self.bars.enabled = not XerrPrio.paused and XerrPrioDB.bars and not XerrPrioDB.configMode
         self.icons.enabled = not XerrPrio.paused and XerrPrioDB.icons and not XerrPrioDB.configMode
 
@@ -305,11 +304,13 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                         XerrPrio.dotStats[self.dotScanner.guid].swp.duration = duration
                         XerrPrio.dotStats[self.dotScanner.guid].swp.interval = interval
                         self.dotScanner.enabled = false
+                        break
                     end
                     if spellId == XerrPrio.icons.spells.vt.id then
                         XerrPrio.dotStats[self.dotScanner.guid].vt.duration = duration
                         XerrPrio.dotStats[self.dotScanner.guid].vt.interval = interval
                         self.dotScanner.enabled = false
+                        break
                     end
 
                     break

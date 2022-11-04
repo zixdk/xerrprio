@@ -23,8 +23,6 @@ XerrPrio.hp_path = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Custom\\';
 XerrPrio.hp_path_icon = 'Interface\\AddOns\\HaloPro\\HaloPro_Art\\Shadow_Icon\\';
 
 XerrPrio.lowestProcTime = 0
-XerrPrio.twistOfFateId = 123254
-XerrPrio.uvlsId = 138963
 XerrPrio.dotStats = {}
 
 XerrPrio.bars = {
@@ -66,7 +64,9 @@ XerrPrio.buffs = {
         heroism = { id = 32182, duration = 0 },
         bloodlust = { id = 2825, duration = 0 },
         timewarp = { id = 80353, duration = 0 },
-        ancienthysteria = { id = 90355, duration = 0 }
+        ancienthysteria = { id = 90355, duration = 0 },
+        tof = { id = 123254, duration = 0},
+        uvls = { id = 138963, duration = 0},
     }
 }
 
@@ -334,7 +334,7 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         local stats = XerrPrio.dotStats[guid][key]
 
-                        local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.twistOfFateId), XerrPrio:PlayerHasProc(XerrPrio.uvlsId)
+                        local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.buffs.spells.tof.id), XerrPrio:PlayerHasProc(XerrPrio.buffs.spells.uvls.id)
                         local current_dps = XerrPrio:GetSpellDamage(spell.id)
 
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
@@ -463,8 +463,8 @@ function XerrPrio:SpellCast(id, guid)
                 }
             end
 
-            self.dotStats[guid][key].tof = self:PlayerHasProc(self.twistOfFateId)
-            self.dotStats[guid][key].uvls = self:PlayerHasProc(self.uvlsId)
+            self.dotStats[guid][key].tof = self:PlayerHasProc(self.buffs.spells.tof.id)
+            self.dotStats[guid][key].uvls = self:PlayerHasProc(self.buffs.spells.uvls.id)
 
             self.dotStats[guid][key].dps = self:GetSpellDamage(spell.id)
 
@@ -602,7 +602,7 @@ function XerrPrio:GetNextSpell()
 
     local guid = UnitGUID('target')
     -- refresh dots if uvls procd
-    if self:PlayerHasProc(self.uvlsId) and self.dotStats[guid] then
+    if self:PlayerHasProc(self.buffs.spells.uvls.id) and self.dotStats[guid] then
         if self.dotStats[guid].vt and not self.dotStats[guid].vt.uvls then
             tinsert(prio, self.icons.spells.vt)
         end

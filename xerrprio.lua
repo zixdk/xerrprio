@@ -1,6 +1,6 @@
 local _G = _G
 local tinsert, tablesize, select, strfind, tonumber = tinsert, table.getn, select, strfind, tonumber
-local strsub, strlen, sformat = strsub, strlen, string.format
+local strsub, strlen, sformat, floor = strsub, strlen, string.format, math.floor
 local _, class = UnitClass('player')
 
 -- known issues
@@ -391,13 +391,13 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
                         _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
-                        _G[frame .. 'TextsTimeLeft']:SetText(math.floor(tl))
+                        _G[frame .. 'TextsTimeLeft']:SetText(floor(tl))
 
                         for i = 1, #spell.ticks do
                             spell.ticks[i]:Hide()
                         end
                         if XerrPrioDB[key].showTicks then
-                            local ticks = math.floor(stats.duration / stats.interval)
+                            local ticks = floor(stats.duration / stats.interval)
                             local numTicks = XerrPrioDB[key].showOnlyLastTick and 2 or ticks
                             if ticks > 0 then
                                 for i = 1, numTicks do

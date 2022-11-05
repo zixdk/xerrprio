@@ -73,8 +73,8 @@ XerrPrio.buffs = {
         bloodlust = { id = 2825, duration = 0 },
         timewarp = { id = 80353, duration = 0 },
         ancienthysteria = { id = 90355, duration = 0 },
-        tof = { id = 123254, duration = 0},
-        uvls = { id = 138963, duration = 0},
+        tof = { id = 123254, duration = 0 },
+        uvls = { id = 138963, duration = 0 },
     }
 }
 

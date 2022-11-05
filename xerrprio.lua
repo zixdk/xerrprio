@@ -360,7 +360,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                 end
 
                                 _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
-                                _G[frame .. 'RefreshSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshBar']:GetWidth() - 8, 0)
                                 _G[frame .. 'RefreshSpark']:Show()
                                 _G[frame .. 'RefreshBar']:Show()
 
@@ -398,7 +397,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
 
                         _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
-                        _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
                         _G[frame .. 'TextsTimeLeft']:SetText(floor(tl))
 
                         for i = 1, #spell.ticks do
@@ -1566,14 +1564,12 @@ function XerrPrio:UpdateConfig()
         _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / 18))
         _G[frame .. 'RefreshBar']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
         _G[frame .. 'RefreshBar']:Show()
-        _G[frame .. 'RefreshSpark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'RefreshBar']:GetWidth() - 8, 0)
         _G[frame .. 'RefreshSpark']:Show()
         _G[frame .. 'TextsRefresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
         _G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
 
         _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * 0.75)
         _G[frame .. 'Bar']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
-        _G[frame .. 'Spark']:SetPoint('LEFT', _G[frame], 'LEFT', _G[frame .. 'Bar']:GetWidth() - 8, 0)
 
         _G[frame .. 'TextsName']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
 

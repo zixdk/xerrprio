@@ -69,9 +69,9 @@
                          alphaMode="ADD">
                     <Size x="16" y="32"/>
                     <Anchors>
-                        <Anchor point="LEFT">
+                        <Anchor point="LEFT" relativeTo="$parentRefreshBar" relativePoint="RIGHT">
                             <Offset>
-                                <AbsDimension x="252" y="0"/>
+                                <AbsDimension x="-8" y="0"/>
                             </Offset>
                         </Anchor>
                     </Anchors>
@@ -90,9 +90,9 @@
                 <Texture file="Interface\CastingBar\UI-CastingBar-Spark" name="$parentSpark" alphaMode="ADD">
                     <Size x="16" y="32"/>
                     <Anchors>
-                        <Anchor point="LEFT">
+                        <Anchor point="LEFT" relativeTo="$parentBar" relativePoint="RIGHT">
                             <Offset>
-                                <AbsDimension x="252" y="0"/>
+                                <AbsDimension x="-8" y="0"/>
                             </Offset>
                         </Anchor>
                     </Anchors>

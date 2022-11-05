@@ -310,13 +310,13 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                     if spellId == XerrPrio.icons.spells.swp.id then
                         XerrPrio.dotStats[self.dotScanner.guid].swp.duration = duration
-                        XerrPrio.dotStats[self.dotScanner.guid].swp.interval = interval
+                        XerrPrio.dotStats[self.dotScanner.guid].swp.interval = tonumber(interval)
                         self.dotScanner.enabled = false
                         break
                     end
                     if spellId == XerrPrio.icons.spells.vt.id then
                         XerrPrio.dotStats[self.dotScanner.guid].vt.duration = duration
-                        XerrPrio.dotStats[self.dotScanner.guid].vt.interval = interval
+                        XerrPrio.dotStats[self.dotScanner.guid].vt.interval = tonumber(interval)
                         self.dotScanner.enabled = false
                         break
                     end

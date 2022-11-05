@@ -348,7 +348,7 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
                         if current_dps >= stats.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. sformat("%.2f", current_dps / stats.dps) .. 'x')
+                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. floor(100 * current_dps / stats.dps - 100) .. '%')
 
                             if XerrPrio.lowestProcTime ~= 0 then
 

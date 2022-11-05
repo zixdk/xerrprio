@@ -403,7 +403,7 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                             spell.ticks[i]:Hide()
                         end
                         if XerrPrioDB[key].showTicks then
-                            local ticks = floor(stats.duration / stats.interval)
+                            local ticks = floor(stats.duration / stats.interval + 0.5)
                             local numTicks = XerrPrioDB[key].showOnlyLastTick and 2 or ticks
                             if ticks > 0 then
                                 for i = 1, numTicks do

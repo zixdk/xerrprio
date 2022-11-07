@@ -897,30 +897,7 @@ end
 
 SLASH_XERRPRIO1, SLASH_XERRPRIO2 = "/xerrprio", "/xprio";
 function SlashCmdList.XERRPRIO(arg)
-
-    if arg then
-
-        if arg == 'prio' then
-            XerrPrio:SetOption(arg, not XerrPrioDB[arg])
-            return
-        end
-
-        if arg == 'dots' then
-            XerrPrio:SetOption(arg, not XerrPrioDB[arg])
-            return
-        end
-
-        if arg == 'config' then
-            XerrPrio:SetOption('configMode', not XerrPrioDB['configMode'])
-            return
-        end
-    end
-
-    print('XerrPrio available options:')
-    print('dots: ' .. (XerrPrioDB.dots and 'on' or 'off'))
-    print('prio: ' .. (XerrPrioDB.prio and 'on' or 'off'))
-    print('config: ' .. (XerrPrioDB.config and 'on' or 'off'))
-
+    InterfaceOptionsFrame_OpenToCategory('xerrprio')
 end
 
 

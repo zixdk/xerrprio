@@ -659,7 +659,7 @@ function XerrPrio:GetNextSpell()
         return prio
     end
 
-    -- refresh swp or vt, only if mindblast is on cd and we dont have dp up
+    -- refresh swp or vt, only if mindblast is on cd and we dont have dp up and next dots will be more powerful
     if self:GetSpellCooldown(self.icons.spells.mb.id) > 1.5 and self:GetDebuffInfo(self.icons.spells.dp.id) == 0 then
 
         if self.dotStats[guid] then
@@ -769,7 +769,7 @@ function XerrPrio:GetNextSpell()
     end
 
     -- swp
-    if self:GetDebuffInfo(self.icons.spells.swp.id) < 0.5 then
+    if self:GetDebuffInfo(self.icons.spells.swp.id) < 1 then
         tinsert(prio, self.icons.spells.swp)
     end
 

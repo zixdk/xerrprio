@@ -73,7 +73,7 @@ XerrPrio.buffs = {
         bloodlust = { id = 2825, duration = 0 },
         timewarp = { id = 80353, duration = 0 },
         ancienthysteria = { id = 90355, duration = 0 },
-        tof = { id = 123254, duration = 0 },
+        tof = { id = 123254, duration = 0, icon = '' },
         uvls = { id = 138963, duration = 0 },
     }
 }
@@ -189,6 +189,8 @@ function XerrPrio:Init()
             spell.name, spell.icon = self:GetSpellInfo(spell.id)
         end
     end
+
+    self.buffs.spells.tof.icon = select(2, self:GetSpellInfo(self.buffs.spells.tof.id))
 
     self.icons.spells.swd.lastCastTime = GetTime()
 
@@ -332,10 +334,9 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
             for key, spell in next, XerrPrio.bars.spells do
                 local tl, perc, duration = XerrPrio:GetDebuffInfo(spell.id)
                 local frame = spell.frame:GetName()
+                _G[frame]:Hide()
                 if tl > 0 then
-
                     local guid = UnitGUID('target')
-
                     if XerrPrio.dotStats[guid] and XerrPrio.dotStats[guid][key] then
 
                         self.show = true
@@ -347,15 +348,31 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         XerrPrio.lowestProcTime = XerrPrio:GetLowestProcTime()
 
+                        local color = XerrPrioDB[key].refreshBarColor
+
+                        _G[frame .. 'RefreshBar']:SetVertexColor(1, 1, 1, 0.2)
+
                         if current_dps >= stats.dps * (1 + XerrPrioDB.minDotDpsIncrease / 100) then
-                            _G[frame .. 'TextsRefresh']:SetText('Refresh ' .. floor(100 * current_dps / stats.dps - 100) .. '%')
+                            --local refreshPowerColor = XerrPrio.colors.hi1
+                            local refreshPower = floor(100 * current_dps / stats.dps - 100)
+
+                            _G[frame .. 'UP1']:Show()
+                            if refreshPower >= 10 and refreshPower < 20 then
+                                --refreshPowerColor = XerrPrio.colors.hi2
+                                _G[frame .. 'UP1']:Show()
+                                _G[frame .. 'UP2']:Show()
+                            elseif refreshPower >= 20 then
+                                _G[frame .. 'UP1']:Show()
+                                _G[frame .. 'UP2']:Show()
+                                _G[frame .. 'UP3']:Show()
+                                --refreshPowerColor = XerrPrio.colors.hi3
+                            end
+
+                            --_G[frame .. 'TextsRefresh']:SetText(XerrPrio.colors.whiteHex .. 'Refresh for ' .. refreshPowerColor .. refreshPower .. XerrPrio.colors.whiteHex .. '%')
 
                             if XerrPrio.lowestProcTime ~= 0 then
 
-                                local color = XerrPrioDB[key].refreshBarColor
-                                if XerrPrio.lowestProcTime > XerrPrioDB.refreshMinDuration then
-                                    _G[frame .. 'RefreshBar']:SetVertexColor(1, 1, 1, 0.2)
-                                else
+                                if XerrPrio.lowestProcTime <= XerrPrioDB.refreshMinDuration then
                                     _G[frame .. 'RefreshBar']:SetVertexColor(color.r, color.g, color.b, color.a)
                                 end
 
@@ -366,20 +383,45 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                             end
 
                         else
-                            _G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', tl))
                             _G[frame .. 'RefreshSpark']:Hide()
                             _G[frame .. 'RefreshBar']:Hide()
+
+                            _G[frame .. 'UP1']:Hide()
+                            _G[frame .. 'UP2']:Hide()
+                            _G[frame .. 'UP3']:Hide()
+
+                            --_G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', tl) .. 's')
+                        end
+
+                        -- refresh before last tick
+                        if tl <= stats.interval then
+                            _G[frame .. 'RefreshBar']:SetVertexColor(color.r, color.g, color.b, color.a)
+                            _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (tl / duration))
+                            _G[frame .. 'RefreshSpark']:Show()
+                            _G[frame .. 'RefreshBar']:Show()
                         end
 
                         if tof then
-                            _G[frame .. 'TextsToF']:SetText('ToF')
-                            _G[frame .. 'TextsToF']:SetTextColor(stats.tof and 0 or 1, stats.tof and 1 or 0, 0)
+                            if stats.tof then
+                                --_G[frame .. 'TextsToF']:SetText(XerrPrio.colors.hi3 .. 'ToF')
+                                --_G[frame .. 'TextsToF']:Show()
+                                _G[frame .. 'ToFIcon']:SetVertexColor(1, 1, 1, 1)
+                                _G[frame .. 'ToFIcon']:Show()
+                            else
+                                --_G[frame .. 'TextsRefresh']:SetText('Refresh for ' .. XerrPrio.colors.hi3 .. 'ToF')
+                                _G[frame .. 'ToFIcon']:SetVertexColor(1, 0, 0, 1)
+                                _G[frame .. 'ToFIcon']:Show()
+                                --_G[frame .. 'TextsRefresh']:Show()
+                            end
                         else
                             if stats.tof then
-                                _G[frame .. 'TextsToF']:SetText('ToF')
-                                _G[frame .. 'TextsToF']:SetTextColor(0, 1, 0)
+                                _G[frame .. 'ToFIcon']:SetVertexColor(1, 1, 1, 1)
+                                _G[frame .. 'ToFIcon']:Show()
+                                --_G[frame .. 'TextsToF']:SetText(XerrPrio.colors.hi3 .. 'ToF')
+                                --_G[frame .. 'TextsToF']:Show()
                             else
-                                _G[frame .. 'TextsToF']:SetText('')
+                                _G[frame .. 'ToFIcon']:Hide()
+                                --_G[frame .. 'TextsToF']:Hide()
                             end
                         end
 
@@ -394,7 +436,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                 _G[frame .. 'TextsUVLS']:SetText('')
                             end
                         end
-
 
                         _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
                         _G[frame .. 'TextsTimeLeft']:SetText(floor(tl))
@@ -417,9 +458,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                         end
                         _G[frame]:Show()
                     end
-
-                else
-                    _G[frame]:Hide()
                 end
             end
 
@@ -1565,8 +1603,8 @@ function XerrPrio:UpdateConfig()
         _G[frame .. 'RefreshBar']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
         _G[frame .. 'RefreshBar']:Show()
         _G[frame .. 'RefreshSpark']:Show()
-        _G[frame .. 'TextsRefresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
-        _G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
+        --_G[frame .. 'TextsRefresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
+        --_G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
 
         _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * 0.75)
         _G[frame .. 'Bar']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
@@ -1577,17 +1615,16 @@ function XerrPrio:UpdateConfig()
         _G[frame .. 'TextsTimeLeft']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)
         _G[frame .. 'Background']:SetWidth(XerrPrioDB.barWidth)
 
-        _G[frame .. 'TextsToF']:SetText('ToF')
-        _G[frame .. 'TextsToF']:SetTextColor(0, 1, 0, 0)
-        _G[frame .. 'TextsToF']:Show()
+        _G[frame .. 'TextsToF']:SetText(XerrPrio.colors.hi3 .. 'ToF')
+        _G[frame .. 'TextsToF']:Hide()
 
-        _G[frame .. 'TextsUVLS']:SetText('UVLS')
-        _G[frame .. 'TextsUVLS']:SetTextColor(0, 1, 0, 0)
+        _G[frame .. 'TextsUVLS']:SetText(XerrPrio.colors.hi3 .. 'UVLS')
         _G[frame .. 'TextsUVLS']:Show()
 
         local background = XerrPrioDB.barBackgroundColor
         _G[frame .. 'Background']:SetVertexColor(background.r, background.g, background.b, background.a)
 
+        _G[frame .. 'ToFIcon']:SetTexture(self.buffs.spells.tof.icon)
         for i = 1, #spell.ticks do
             spell.ticks[i]:Hide()
         end

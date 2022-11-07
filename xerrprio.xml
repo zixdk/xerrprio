@@ -97,6 +97,47 @@
                         </Anchor>
                     </Anchors>
                 </Texture>
+                <Texture name="$parentUP1" file="Interface\AddOns\xerrprio\up">
+                    <Size x="20" y="20"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="5" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentUP2" file="Interface\AddOns\xerrprio\up">
+                    <Size x="20" y="20"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="26" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentUP3" file="Interface\AddOns\xerrprio\up">
+                    <Size x="20" y="20"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="47" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentToFIcon" file="">
+                    <Size x="20" y="20"/>
+                    <TexCoords left="0.1" right="0.9" top="0.1" bottom="0.9"/>
+                    <Anchors>
+                        <Anchor point="LEFT">
+                            <Offset>
+                                <AbsDimension x="95" y="0"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
             </Layer>
         </Layers>
         <Frames>
@@ -115,11 +156,11 @@
                 </Anchors>
                 <Layers>
                     <Layer level="OVERLAY">
-                        <FontString name="$parentRefresh" inherits="GameFontNormal" justifyH="LEFT" text="Longertext">
+                        <FontString name="$parentRefresh" inherits="GameFontNormal" justifyH="LEFT" text="">
                             <Anchors>
                                 <Anchor point="LEFT">
                                     <Offset>
-                                        <AbsDimension x="10" y="0"/>
+                                        <AbsDimension x="10" y="-1"/>
                                     </Offset>
                                 </Anchor>
                             </Anchors>
@@ -131,7 +172,7 @@
                             <Anchors>
                                 <Anchor point="LEFT">
                                     <Offset>
-                                        <AbsDimension x="95" y="0"/>
+                                        <AbsDimension x="95" y="-1"/>
                                     </Offset>
                                 </Anchor>
                             </Anchors>
@@ -143,7 +184,7 @@
                             <Anchors>
                                 <Anchor point="LEFT">
                                     <Offset>
-                                        <AbsDimension x="125" y="0"/>
+                                        <AbsDimension x="125" y="-1"/>
                                     </Offset>
                                 </Anchor>
                             </Anchors>
@@ -155,7 +196,7 @@
                             <Anchors>
                                 <Anchor point="RIGHT">
                                     <Offset>
-                                        <AbsDimension x="-30" y="0"/>
+                                        <AbsDimension x="-30" y="-1"/>
                                     </Offset>
                                 </Anchor>
                             </Anchors>
@@ -167,7 +208,7 @@
                             <Anchors>
                                 <Anchor point="RIGHT">
                                     <Offset>
-                                        <AbsDimension x="-3" y="0"/>
+                                        <AbsDimension x="-3" y="-1"/>
                                     </Offset>
                                 </Anchor>
                             </Anchors>

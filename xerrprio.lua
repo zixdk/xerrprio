@@ -86,9 +86,9 @@ XerrPrio.nextSpell = {
 XerrPrio.colors = {
     whiteHex = '|cffffffff',
 
-    hi1 = '|cffD69637',
-    hi2 = '|cffC8d637',
-    hi3 = '|cff37d63e',
+    hi1 = '|cff01944a',
+    hi2 = '|cff04bd60',
+    hi3 = '|cff02f542',
 
     lo1 = '|cff37d63e',
     lo2 = '|cffC8d637',

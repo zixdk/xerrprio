@@ -161,14 +161,17 @@ function XerrPrio:Init()
 
     self.init = false
 
+    -- limit to priest / shadow
     if class ~= 'PRIEST' or GetSpecialization() ~= 3 then
         XerrPrioBars:Hide()
         XerrPrioIcons:Hide()
         return false
     end
 
+    -- get spellbook ids for all spells
     self:PopulateSpellBookID()
 
+    -- get spell name and icon, and create bars
     for key, spell in next, self.bars.spells do
         if spell.name == '' then
             spell.name, spell.icon = self:GetSpellInfo(spell.id)
@@ -184,6 +187,7 @@ function XerrPrio:Init()
         end
     end
 
+    -- get names and icons for prio spells
     for _, spell in next, self.icons.spells do
         if spell.name == '' then
             spell.name, spell.icon = self:GetSpellInfo(spell.id)
@@ -194,6 +198,7 @@ function XerrPrio:Init()
 
     self.icons.spells.swd.lastCastTime = GetTime()
 
+    -- addon settings
     if not XerrPrioDB then
         XerrPrioDB = {
             configMode = false,
@@ -234,6 +239,7 @@ function XerrPrio:Init()
 
     self.init = true
 
+    -- start worker
     XerrPrio.Worker:Show()
 
 end
@@ -483,6 +489,7 @@ end)
 --- Helpers
 --------------------
 
+-- get swp/vt dot stats on cast, and save last swd cast time
 function XerrPrio:SpellCast(id, guid)
 
     if id == self.icons.spells.swd.id then
@@ -521,11 +528,13 @@ function XerrPrio:SpellCast(id, guid)
     end
 end
 
+-- get spell name, icon, and cast time
 function XerrPrio:GetSpellInfo(id)
     local name, _, icon, _, _, _, castTime = GetSpellInfo(id)
     return name, icon, castTime / 1000
 end
 
+-- get lowest temporary buff/proc duration
 function XerrPrio:GetLowestProcTime()
 
     local lowestTime = 100
@@ -549,6 +558,7 @@ function XerrPrio:GetLowestProcTime()
     return 0
 end
 
+-- get target debuff timeleft, and duration
 function XerrPrio:GetDebuffInfo(id)
     if not UnitExists('target') then
         return 0, 0, 0
@@ -563,6 +573,7 @@ function XerrPrio:GetDebuffInfo(id)
     return 0, 0, 0
 end
 
+-- check if player has a proc/buff
 function XerrPrio:PlayerHasProc(procId)
     for i = 1, 40 do
         if select(11, UnitBuff('player', i)) == procId then
@@ -572,6 +583,8 @@ function XerrPrio:PlayerHasProc(procId)
     return false
 end
 
+-- check if spell is next, next2, inrange, and get icon
+-- helper for wa
 function XerrPrio:GetWAIconColor(spell)
 
     if not UnitExists('target') or self.paused then
@@ -620,6 +633,7 @@ function XerrPrio:GetWAIconColor(spell)
     return 1, 0.2, 0.2, 1, isNext, isNext2, inRange, icon
 end
 
+-- get spellbook ids for all player spells
 function XerrPrio:PopulateSpellBookID()
     self.spellBookSpells = {}
 
@@ -640,6 +654,7 @@ function XerrPrio:PopulateSpellBookID()
     end
 end
 
+-- get next spell for priority casting
 function XerrPrio:GetNextSpell()
 
     local prio = {}
@@ -803,6 +818,7 @@ function XerrPrio:GetNextSpell()
     return prio
 end
 
+-- get time since last swd cast, to track icd
 function XerrPrio:TimeSinceLastSWD()
     local t = GetTime() - self.icons.spells.swd.lastCastTime
     local icd = 8 - t
@@ -817,6 +833,7 @@ function XerrPrio:TimeSinceLastSWD()
     end
 end
 
+-- get a spell's cooldown
 function XerrPrio:GetSpellCooldown(id)
     local start, duration, enabled = GetSpellCooldown(id);
     if enabled == 0 then
@@ -830,6 +847,7 @@ function XerrPrio:GetSpellCooldown(id)
     return 0
 end
 
+-- get global cooldown
 function XerrPrio:GetGCD()
     local start, duration = GetSpellCooldown(61304);
     if start > 0 and duration > 0 then
@@ -838,10 +856,12 @@ function XerrPrio:GetGCD()
     return 0
 end
 
+-- get number of shadow orbs
 function XerrPrio:GetShadowOrbs()
     return UnitPower("player", SPELL_POWER_SHADOW_ORBS)
 end
 
+-- check if target has 20% or less hp
 function XerrPrio:ExecutePhase()
     if not UnitExists('target') then
         return false
@@ -849,6 +869,7 @@ function XerrPrio:ExecutePhase()
     return (UnitHealth('target') * 100) / UnitHealthMax('target') <= 20
 end
 
+-- simple str replace
 function XerrPrio:replace(text, search, replace)
     if search == replace then
         return text
@@ -865,6 +886,7 @@ function XerrPrio:replace(text, search, replace)
     return searchedtext
 end
 
+-- get swp/vt dps from tooltip
 function XerrPrio:GetSpellDamage(id)
 
     XerrPrioTooltipFrame:SetOwner(UIParent, "ANCHOR_NONE")

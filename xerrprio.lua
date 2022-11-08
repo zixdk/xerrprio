@@ -1646,7 +1646,7 @@ function XerrPrio:UpdateConfig()
         local textColor = XerrPrioDB[key].textColor
         local refreshBarColor = XerrPrioDB[key].refreshBarColor
 
-        _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / 18))
+        _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / XerrPrio.OptionsAnim.duration))
         _G[frame .. 'RefreshBar']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
         _G[frame .. 'RefreshBar']:Show()
         _G[frame .. 'RefreshSpark']:Show()

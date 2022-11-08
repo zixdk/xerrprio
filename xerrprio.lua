@@ -912,7 +912,7 @@ function XerrPrio:ExecutePhase()
     if not UnitExists('target') then
         return false
     end
-    return (UnitHealth('target') * 100) / UnitHealthMax('target') <= 20
+    return UnitHealth('target') / UnitHealthMax('target') <= 0.2
 end
 
 -- simple str replace

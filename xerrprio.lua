@@ -46,7 +46,8 @@ XerrPrio.bars = {
             frame = nil,
             ord = 2,
             name = '', id = 34914,
-            ticks = {}
+            ticks = {},
+            castTimeTick = nil
         }
     }
 }
@@ -468,6 +469,12 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                     spell.ticks[i]:Show()
                                 end
                             end
+
+                            if spell.id == XerrPrio.bars.spells.vt.id then
+                                local vtCastTime = select(3, XerrPrio:GetSpellInfo(spell.id))
+                                _G[spell.castTimeTick:GetName() .. 'Tick']:SetWidth(XerrPrioDB.barWidth * vtCastTime / duration)
+                            end
+
                         end
                         _G[frame]:Show()
                     end
@@ -1647,6 +1654,8 @@ function XerrPrio:UpdateConfig()
     XerrPrioBars:SetWidth(XerrPrioDB.barWidth)
     XerrPrioBars:SetHeight(48)
 
+    local vtCastTime = select(3, self:GetSpellInfo(self.bars.spells.vt.id))
+
     for key, spell in next, self.bars.spells do
         local frame = spell.frame:GetName()
 
@@ -1714,6 +1723,22 @@ function XerrPrio:UpdateConfig()
                     spell.ticks[i]:Show()
                 end
             end
+
+            -- vt cast time tick
+            if spell.id == XerrPrio.bars.spells.vt.id then
+                if not spell.castTimeTick then
+                    spell.castTimeTick = CreateFrame("Frame", "XerrPrio_" .. key .. "_BarTicks_CastTime", _G[frame], "XerrPrioBarTickTemplate")
+                end
+                if spell.ticks[2] then
+                    spell.castTimeTick:SetPoint("LEFT", spell.ticks[2], "LEFT", 0, 0)
+                    _G[spell.castTimeTick:GetName() .. 'Tick']:SetWidth(XerrPrioDB.barWidth * vtCastTime / XerrPrio.OptionsAnim.duration)
+
+                    _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
+
+                    spell.castTimeTick:Show()
+                end
+            end
+
         end
 
     end

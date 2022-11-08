@@ -946,10 +946,10 @@ function XerrPrio:GetSpellDamage(id)
 
     tooltipDescription = self:replace(tooltipDescription, ',', '')
 
-    if id == XerrPrio.icons.spells.swp.id then
+    if id == self.icons.spells.swp.id then
         _, _, totalDmg, tickTime = strfind(tooltipDescription, "(%S+) Shadow damage over (%S+)")
     end
-    if id == XerrPrio.icons.spells.vt.id then
+    if id == self.icons.spells.vt.id then
         _, _, totalDmg, tickTime = strfind(tooltipDescription, "Causes (%S+) Shadow damage over (%S+)")
     end
 

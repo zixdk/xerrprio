@@ -1650,10 +1650,7 @@ function XerrPrio:UpdateConfig()
         _G[frame .. 'RefreshBar']:SetVertexColor(refreshBarColor.r, refreshBarColor.g, refreshBarColor.b, refreshBarColor.a)
         _G[frame .. 'RefreshBar']:Show()
         _G[frame .. 'RefreshSpark']:Show()
-        --_G[frame .. 'TextsRefresh']:SetTextColor(refreshTextColor.r, refreshTextColor.g, refreshTextColor.b, refreshTextColor.a)
-        --_G[frame .. 'TextsRefresh']:SetText(sformat('%.1f', XerrPrioDB.refreshMinDuration))
 
-        _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * 0.75)
         _G[frame .. 'Bar']:SetVertexColor(barColor.r, barColor.g, barColor.b, barColor.a)
 
         _G[frame .. 'TextsName']:SetTextColor(textColor.r, textColor.g, textColor.b, textColor.a)

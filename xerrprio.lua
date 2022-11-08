@@ -73,8 +73,8 @@ XerrPrio.buffs = {
         bloodlust = { id = 2825, duration = 0 },
         timewarp = { id = 80353, duration = 0 },
         ancienthysteria = { id = 90355, duration = 0 },
-        tof = { id = 123254, duration = 0, icon = '' },
-        uvls = { id = 138963, duration = 0 },
+        tof = { id = 123254, duration = 0 },
+        uvls = { id = 138963, duration = 0, icon = '' },
     }
 }
 
@@ -194,7 +194,8 @@ function XerrPrio:Init()
         end
     end
 
-    self.buffs.spells.tof.icon = select(2, self:GetSpellInfo(self.buffs.spells.tof.id))
+    -- get icons for tof and uvls
+    self.buffs.spells.uvls.icon = select(2, self:GetSpellInfo(self.buffs.spells.uvls.id))
 
     self.icons.spells.swd.lastCastTime = GetTime()
 
@@ -432,14 +433,19 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                         end
 
                         if uvls then
-                            _G[frame .. 'TextsUVLS']:SetText('UVLS')
-                            _G[frame .. 'TextsUVLS']:SetTextColor(stats.uvls and 0 or 1, stats.uvls and 1 or 0, 0)
+                            if stats.uvls then
+                                _G[frame .. 'UVLSIcon']:SetVertexColor(1, 1, 1, 1)
+                                _G[frame .. 'UVLSIcon']:Show()
+                            else
+                                _G[frame .. 'UVLSIcon']:SetVertexColor(1, 0, 0, 1)
+                                _G[frame .. 'UVLSIcon']:Show()
+                            end
                         else
                             if stats.uvls then
-                                _G[frame .. 'TextsUVLS']:SetText('UVLS')
-                                _G[frame .. 'TextsUVLS']:SetTextColor(0, 1, 0)
+                                _G[frame .. 'UVLSIcon']:SetVertexColor(1, 1, 1, 1)
+                                _G[frame .. 'UVLSIcon']:Show()
                             else
-                                _G[frame .. 'TextsUVLS']:SetText('')
+                                _G[frame .. 'UVLSIcon']:Hide()
                             end
                         end
 
@@ -1623,7 +1629,8 @@ function XerrPrio:UpdateConfig()
         local background = XerrPrioDB.barBackgroundColor
         _G[frame .. 'Background']:SetVertexColor(background.r, background.g, background.b, background.a)
 
-        _G[frame .. 'ToFIcon']:SetTexture(self.buffs.spells.tof.icon)
+        _G[frame .. 'UVLSIcon']:SetTexture(self.buffs.spells.uvls.icon)
+
         for i = 1, #spell.ticks do
             spell.ticks[i]:Hide()
         end

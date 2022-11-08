@@ -127,13 +127,13 @@
                         </Anchor>
                     </Anchors>
                 </Texture>
-                <Texture name="$parentToFIcon" file="">
-                    <Size x="20" y="20"/>
+                <Texture name="$parentUVLSIcon" file="">
+                    <Size x="18" y="18"/>
                     <TexCoords left="0.1" right="0.9" top="0.1" bottom="0.9"/>
                     <Anchors>
                         <Anchor point="LEFT">
                             <Offset>
-                                <AbsDimension x="95" y="0"/>
+                                <AbsDimension x="115" y="0"/>
                             </Offset>
                         </Anchor>
                     </Anchors>

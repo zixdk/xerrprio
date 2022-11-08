@@ -349,6 +349,9 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
 
                         self.show = true
 
+                        _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
+                        _G[frame .. 'TextsTimeLeft']:SetText(floor(tl))
+
                         local stats = XerrPrio.dotStats[guid][key]
 
                         local tof, uvls = XerrPrio:PlayerHasProc(XerrPrio.buffs.spells.tof.id), XerrPrio:PlayerHasProc(XerrPrio.buffs.spells.uvls.id)
@@ -379,7 +382,12 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                     _G[frame .. 'RefreshBar']:SetVertexColor(color.r, color.g, color.b, color.a)
                                 end
 
-                                _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
+                                if XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration) > XerrPrioDB.barWidth * perc then
+                                    _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * perc)
+                                else
+                                    _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrio.lowestProcTime / duration))
+                                end
+
                                 _G[frame .. 'RefreshSpark']:Show()
                                 _G[frame .. 'RefreshBar']:Show()
 
@@ -418,9 +426,6 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                                 _G[frame .. 'UVLSIcon']:Hide()
                             end
                         end
-
-                        _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * perc)
-                        _G[frame .. 'TextsTimeLeft']:SetText(floor(tl))
 
                         for i = 1, #spell.ticks do
                             spell.ticks[i]:Hide()
@@ -962,7 +967,6 @@ SLASH_XERRPRIO1, SLASH_XERRPRIO2 = "/xerrprio", "/xprio";
 function SlashCmdList.XERRPRIO(arg)
     InterfaceOptionsFrame_OpenToCategory('xerrprio')
 end
-
 
 --------------------
 --- Options
@@ -1640,7 +1644,6 @@ function XerrPrio:UpdateConfig()
 
         local barColor = XerrPrioDB[key].barColor
         local textColor = XerrPrioDB[key].textColor
-        local refreshTextColor = XerrPrioDB[key].refreshTextColor
         local refreshBarColor = XerrPrioDB[key].refreshBarColor
 
         _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / 18))

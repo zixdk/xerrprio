@@ -156,42 +156,6 @@
                 </Anchors>
                 <Layers>
                     <Layer level="OVERLAY">
-                        <FontString name="$parentRefresh" inherits="GameFontNormal" justifyH="LEFT" text="">
-                            <Anchors>
-                                <Anchor point="LEFT">
-                                    <Offset>
-                                        <AbsDimension x="10" y="-1"/>
-                                    </Offset>
-                                </Anchor>
-                            </Anchors>
-                            <Size>
-                                <AbsDimension x="140" y="30"/>
-                            </Size>
-                        </FontString>
-                        <FontString name="$parentToF" inherits="GameFontNormal" justifyH="LEFT" text="ToF">
-                            <Anchors>
-                                <Anchor point="LEFT">
-                                    <Offset>
-                                        <AbsDimension x="95" y="-1"/>
-                                    </Offset>
-                                </Anchor>
-                            </Anchors>
-                            <Size>
-                                <AbsDimension x="30" y="30"/>
-                            </Size>
-                        </FontString>
-                        <FontString name="$parentUVLS" inherits="GameFontNormal" justifyH="LEFT" text="UVLS">
-                            <Anchors>
-                                <Anchor point="LEFT">
-                                    <Offset>
-                                        <AbsDimension x="125" y="-1"/>
-                                    </Offset>
-                                </Anchor>
-                            </Anchors>
-                            <Size>
-                                <AbsDimension x="30" y="30"/>
-                            </Size>
-                        </FontString>
                         <FontString name="$parentName" inherits="GameFontNormal" justifyH="RIGHT" text="Spell Name">
                             <Anchors>
                                 <Anchor point="RIGHT">

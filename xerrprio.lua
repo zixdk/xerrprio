@@ -23,6 +23,7 @@ end
 
 XerrPrio = CreateFrame("Frame")
 XerrPrio.Worker = CreateFrame("Frame")
+XerrPrio.OptionsAnim = CreateFrame("Frame")
 
 XerrPrio.init = false
 XerrPrio.paused = true
@@ -486,6 +487,68 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
             XerrPrioIconsIcon:SetTexture(XerrPrio.nextSpell[1].icon)
             XerrPrioIconsIcon2:SetTexture(XerrPrio.nextSpell[2].icon)
             XerrPrioIcons:Show()
+        end
+    end
+
+end)
+
+--------------------
+--- Options open animation
+--------------------
+
+XerrPrio.OptionsAnim:Hide()
+XerrPrio.OptionsAnim.start = GetTime()
+
+XerrPrio.OptionsAnim.duration = 18
+XerrPrio.OptionsAnim.tl = XerrPrio.OptionsAnim.duration
+
+XerrPrio.OptionsAnim:SetScript("OnShow", function(self)
+    self.start = GetTime()
+    self.tl = self.duration
+    self.timeSinceLastUpdate = 0;
+end)
+
+XerrPrio.OptionsAnim:SetScript("OnUpdate", function(self, elapsed)
+
+    self.timeSinceLastUpdate = self.timeSinceLastUpdate + elapsed;
+
+    if self.timeSinceLastUpdate >= 0.05 then
+        self.timeSinceLastUpdate = 0;
+
+        if XerrPrioDB.configMode then
+
+            self.tl = self.tl - 0.05
+
+            if self.tl <= 0 then
+                self.tl = self.duration
+            end
+
+            for _, spell in next, XerrPrio.bars.spells do
+                local frame = spell.frame:GetName()
+
+                if self.tl == self.duration then
+                    _G[frame .. 'RefreshBar']:SetWidth(XerrPrioDB.barWidth * (XerrPrioDB.refreshMinDuration / self.duration))
+                end
+
+                _G[frame .. 'Bar']:SetWidth(XerrPrioDB.barWidth * (self.tl / self.duration))
+                _G[frame .. 'TextsTimeLeft']:SetText(floor(self.tl))
+
+                if _G[frame .. 'RefreshBar']:GetWidth() > _G[frame .. 'Bar']:GetWidth() then
+                    _G[frame .. 'RefreshBar']:SetWidth(_G[frame .. 'Bar']:GetWidth())
+                end
+
+                if spell.id == XerrPrio.bars.spells.vt.id then
+
+                    if self.tl > 3 and self.tl < 3 + 1.05 then
+                        _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(1,1,1,0.5)
+                    else
+                        _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
+                    end
+
+                end
+
+            end
+
         end
     end
 
@@ -1573,10 +1636,12 @@ function XerrPrio:UpdateConfig()
     end
 
     if XerrPrioDB.configMode then
+        XerrPrio.OptionsAnim:Show()
     else
         for _, spell in next, self.bars.spells do
             spell.frame:Hide()
         end
+        XerrPrio.OptionsAnim:Hide()
     end
 
     XerrPrioBars:SetWidth(XerrPrioDB.barWidth)

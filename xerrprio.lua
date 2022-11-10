@@ -443,6 +443,13 @@ XerrPrio.Worker:SetScript("OnUpdate", function(self, elapsed)
                             if spell.id == XerrPrio.bars.spells.vt.id then
                                 local vtCastTime = select(3, XerrPrio:GetSpellInfo(spell.id))
                                 _G[spell.castTimeTick:GetName() .. 'Tick']:SetWidth(XerrPrioDB.barWidth * vtCastTime / duration)
+
+                                if tl >= stats.interval and tl <= stats.interval + vtCastTime then
+                                    _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(1,1,1,0.5)
+                                else
+                                    _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
+                                end
+
                             end
 
                         end
@@ -495,6 +502,7 @@ XerrPrio.OptionsAnim:SetScript("OnUpdate", function(self, elapsed)
         if XerrPrioDB.configMode then
 
             self.tl = self.tl - 0.05
+            local vtCastTime = select(3, XerrPrio:GetSpellInfo(XerrPrio.bars.spells.vt.id))
 
             if self.tl <= 0 then
                 self.tl = self.duration
@@ -516,10 +524,17 @@ XerrPrio.OptionsAnim:SetScript("OnUpdate", function(self, elapsed)
 
                 if spell.id == XerrPrio.bars.spells.vt.id then
 
-                    if self.tl > 3 and self.tl < 3 + 1.05 then
-                        _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(1,1,1,0.5)
-                    else
-                        _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
+                    if spell.ticks[2] then
+                        spell.castTimeTick:SetPoint("LEFT", spell.ticks[2], "LEFT", 0, 0)
+                        _G[spell.castTimeTick:GetName() .. 'Tick']:SetWidth(XerrPrioDB.barWidth * vtCastTime / XerrPrio.OptionsAnim.duration)
+
+                        if self.tl >= 3 and self.tl <= 3 + vtCastTime then
+                            _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(1,1,1,0.5)
+                        else
+                            _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
+                        end
+
+                        spell.castTimeTick:Show()
                     end
 
                 end
@@ -1690,9 +1705,7 @@ function XerrPrio:UpdateConfig()
                 if spell.ticks[2] then
                     spell.castTimeTick:SetPoint("LEFT", spell.ticks[2], "LEFT", 0, 0)
                     _G[spell.castTimeTick:GetName() .. 'Tick']:SetWidth(XerrPrioDB.barWidth * vtCastTime / XerrPrio.OptionsAnim.duration)
-
                     _G[spell.castTimeTick:GetName() .. 'Tick']:SetVertexColor(0,0,0,0.5)
-
                     spell.castTimeTick:Show()
                 end
             end

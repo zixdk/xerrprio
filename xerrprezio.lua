@@ -53,8 +53,8 @@ XerrPrio.bars = {
 }
 XerrPrio.icons = {
     spells = {
-        swp = { name = '', id = 589, icon = '', spellBookID = 0 },
-        vt = { name = '', id = 34914, icon = '', spellBookID = 0 },
+        Immolate = { name = '', id = 348, icon = '', spellBookID = 0 },
+        CB = { name = '', id = 116858, icon = '', spellBookID = 0 },
         dp = { name = '', id = 2944, icon = '', spellBookID = 0 },
         mf = { name = '', id = 15407, icon = '', spellBookID = 0 },
         mb = { name = '', id = 8092, icon = '', spellBookID = 0 },
@@ -76,7 +76,7 @@ XerrPrio.buffs = {
         timewarp = { id = 80353, duration = 0 },
         ancienthysteria = { id = 90355, duration = 0 },
         tof = { id = 123254, duration = 0 },
-        uvls = { id = 138963, duration = 0, icon = '' },
+        chaye = { id = 94531, duration = 0, icon = '' },
     }
 }
 
